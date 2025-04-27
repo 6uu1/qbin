@@ -138,6 +138,8 @@ JWT_SECRET=your_jwt_secret  # JWT密钥，用于加密验证（建议修改）
 | `ENABLE_ANONYMOUS_ACCESS` | 可选 | 匿名访问, 支持共享编辑 |                       `1`                       |
 |      `TOKEN_EXPIRE`       | 可选 | 令牌有效期(秒)，默认一年 |                   `31536000`                    |
 |  `MAX_UPLOAD_FILE_SIZE`   | 可选 | 最大上传文件大小(字节)，默认 50MB |                   `52428800`                    |
+|  `DENO_KV_PROJECT_ID`   | 可选 | Deno KV 项目 ID，默认为空 |                   `xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`                    |
+|  `DENO_KV_ACCESS_TOKEN`   | 可选 | Deno KV 项目访问令牌，默认为空 |                   ``                    |
 
 ### 社交登录配置（可选）
 

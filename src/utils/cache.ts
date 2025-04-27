@@ -4,13 +4,30 @@
  * - Cache API (Deno Deploy KV-like)
  * - Deno KV (for meta) + Postgres (最终存储)
  */
+import {
+  CACHE_CHANNEL,
+  DENO_KV_ACCESS_TOKEN,
+  DENO_KV_PROJECT_ID,
+  DENO_KV_PROJECT_ID_REGEX,
+  MAX_CACHE_SIZE,
+  PASTE_STORE
+} from "../config/constants.ts";
 import { Metadata } from "../utils/types.ts";
-import {PASTE_STORE, CACHE_CHANNEL, MAX_CACHE_SIZE} from "../config/constants.ts";
 import { checkPassword } from "./validator.ts";
 
 
 export const memCache = new Map<string, Metadata | Record<string, unknown>>();
-export const kv = await Deno.openKv();
+export const kv = await ((() => {
+  const projectId = DENO_KV_PROJECT_ID?.trim() || "";
+  const accessToken = DENO_KV_ACCESS_TOKEN?.trim() || "";
+
+  if (projectId && accessToken && DENO_KV_PROJECT_ID_REGEX.test(projectId)) {
+    return Deno.openKv(`https://api.deno.com/databases/${projectId}/connect`, {
+      accessToken: accessToken,
+    });
+  }
+  return Deno.openKv();
+})());
 export const cacheBroadcast = new BroadcastChannel(CACHE_CHANNEL);
 
 cacheBroadcast.onmessage = async (event: MessageEvent) => {

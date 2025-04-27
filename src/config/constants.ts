@@ -1,7 +1,7 @@
 /**
  * 全局常量配置
  */
-import {get_env} from "./env.ts";
+import { get_env } from "./env.ts";
 
 
 export const TOKEN_EXPIRE = parseInt(get_env("TOKEN_EXPIRE", "31536000")); // JWT 过期时长(秒)
@@ -10,7 +10,12 @@ export const MAX_CACHE_SIZE = 1048576;    // 单数据缓存上限
 export const ENABLE_ANONYMOUS_ACCESS = parseInt(get_env("ENABLE_ANONYMOUS_ACCESS", "1"));   // 匿名访问
 
 export const PASTE_STORE = "qbinv2";     // KV 命名空间
+export const DENO_KV_ACCESS_TOKEN = get_env("DENO_KV_ACCESS_TOKEN"); // Deno KV 访问令牌
+export const DENO_KV_PROJECT_ID = get_env("DENO_KV_PROJECT_ID"); // Deno KV 项目 ID
 export const CACHE_CHANNEL = "qbin-cache-sync";
+
+// Deno KV 项目 ID 验证正则表达式
+export const DENO_KV_PROJECT_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const jwtSecret = get_env("JWT_SECRET", "input-your-jwtSecret");  // 从环境变量获取jwt密钥
 export const exactPaths = ["/favicon.ico", "/document", "/api/health", "/login", "/pwa-loader", "/service-worker.js", "/manifest.json"]
@@ -26,7 +31,7 @@ export const VALID_CHARS_REGEX = /^[a-zA-Z0-9-\.\_]+$/;
 export const mimeTypeRegex = /^[-\w.+]+\/[-\w.+]+(?:;\s*[-\w]+=[-\w]+)*$/i;
 // 保留访问路径
 export const reservedPaths = new Set<string>(
-    (get_env("RESERVED_PATHS", "")).split(",").map(s => s.trim().toLowerCase())
+  (get_env("RESERVED_PATHS", "")).split(",").map(s => s.trim().toLowerCase())
 );
 
 export const HEADERS = {

@@ -123,6 +123,19 @@ docker run -it -p 8000:8000 \
 
 ## 🤝 参与贡献
 
+如果您对这个项目感兴趣，欢迎参与贡献，也欢迎 "Star" 支持一下 ^_^ <br>
+以下为提PR并合并的小伙伴，在此感谢项目中所有的贡献者。
+
+<a href="https://github.com/quick-Bin/qbin/graphs/contributors" target="_blank">
+  <table>
+    <tr>
+      <th colspan="2">
+        <br><img src="https://contrib.rocks/image?repo=quick-bin/qbin"><br><br>
+      </th>
+    </tr>
+  </table>
+</a>
+
 1. Fork 本项目  
 2. 创建新分支：`git checkout -b feature/amazing-feature`  
 3. 提交更改：`git commit -m "Add amazing feature"`  
@@ -145,10 +158,17 @@ docker run -it -p 8000:8000 \
 - [deno_docker](https://github.com/denoland/deno_docker)
 - [drizzle-orm](https://github.com/drizzle-team/drizzle-orm)
 - [bin](https://github.com/wantguns/bin) 
-- [excalidraw](https://github.com/excalidraw/excalidraw)
+- [excalidraw](https://github.com/excalidraw/excalidraw) 
 
 ## 许可证
 
 本项目采用 [GPL-3.0](LICENSE) 协议开源，欢迎自由使用与二次开发。  
 让我们共建开放、高效的云上存储与分享新生态！
 
+## History
+<a href="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history?repo_id=951259895" target="_blank" style="display: block" align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history/thumbnail.png?repo_id=951259895&image_size=auto&color_scheme=dark" width="721" height="auto">
+    <img alt="Star History of Quick-Bin/qbin" src="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history/thumbnail.png?repo_id=951259895&image_size=auto&color_scheme=light" width="721" height="auto">
+  </picture>
+</a>
