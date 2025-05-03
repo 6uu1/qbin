@@ -7,7 +7,39 @@ class QBinViewer {
         this.cherryContainer = document.getElementById('qbin-viewer');
         this.isProcessing = false;
         this.debounceTimeouts = new Map();
+        this.lastScrollY = 0;
+        this.scrollThreshold = 20;
+        this.ticking = false;
         this.init();
+        this.initScrollHandler();
+    }
+
+    initScrollHandler() {
+        window.addEventListener('scroll', () => {
+            if (!this.ticking) {
+                window.requestAnimationFrame(() => this.handleScroll());
+                this.ticking = true;
+            }
+        }, { passive: true });
+    }
+
+    handleScroll() {
+        const currentScrollY = window.scrollY;
+        
+        // Check scroll direction and position
+        if (currentScrollY > this.lastScrollY + this.scrollThreshold) {
+            // Scrolling DOWN - hide the header after scrolling a bit
+            if (currentScrollY > 80) { // Only hide after scrolling down some content
+                this.buttonBar.classList.add('header-hidden');
+            }
+        } else if (currentScrollY < this.lastScrollY - (this.scrollThreshold/2) || currentScrollY <= 0) {
+            // Scrolling UP or at the TOP - show the header
+            // We use a smaller threshold for showing to make it more responsive
+            this.buttonBar.classList.remove('header-hidden');
+        }
+        
+        this.lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
+        this.ticking = false;
     }
 
     initViewer(content, contentType) {

@@ -65,7 +65,7 @@ export async function getRenderHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");  // public, max-age=3600
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/render.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/render.html'));
     const hash = cyrb53_str('render.html' + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -74,7 +74,7 @@ export async function getEditHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/multi-editor.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/multi-editor.html'));
     const hash = cyrb53_str("multi-editor.html" + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -83,7 +83,7 @@ export async function getCodeEditHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/code-editor.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/code-editor.html'));
     const hash = cyrb53_str("code-editor.html" + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -92,7 +92,7 @@ export async function getMDEditHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/md-editor.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/md-editor.html'));
     const hash = cyrb53_str("md-editor.html" + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -101,7 +101,7 @@ export async function getLoginPageHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/login.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/login.html'));
     const hash = cyrb53_str('login.html' + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -126,7 +126,7 @@ export async function getHomeHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/home.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/home.html'));
     const hash = cyrb53_str("home.html" + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -135,7 +135,7 @@ export async function getPWALoaderHtml(ctx, status = 200): Promise<string> {
     ctx.response.status = status;
     ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
     // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-    ctx.response.body = await Deno.readTextFile(join(basePath, './templates/pwa-loader.html'));
+    ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/pwa-loader.html'));
     const hash = cyrb53_str('pwa-loader.html' + ctx.response.body.length);
     ctx.state.metadata = {etag: hash};
 }
@@ -167,7 +167,7 @@ export async function getManifest(ctx, status = 200): Promise<string> {
 //   ctx.response.status = status;
 //   ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
 //   // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-//   ctx.response.body = await Deno.readTextFile(join(basePath, './templates/error.html'));
+//   ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/error.html'));
 //   const hash = cyrb53_str('error.html' + ctx.response.body.length);
 //   ctx.state.metadata = { etag: hash };
 // }
@@ -177,7 +177,7 @@ export async function getManifest(ctx, status = 200): Promise<string> {
 //   ctx.response.status = status;
 //   ctx.response.headers.set("Content-Type", "text/html; charset=utf-8");
 //   // ctx.response.headers.set("Cache-Control", "public, max-age=300");
-//   ctx.response.body = await Deno.readTextFile(join(basePath, './templates/password.html'));
+//   ctx.response.body = await Deno.readTextFile(join(basePath, './static/templates/password.html'));
 //   const hash = cyrb53_str('password.html' + ctx.response.body.length);
 //   ctx.state.metadata = { etag: hash };
 // }
