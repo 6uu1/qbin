@@ -26,5 +26,5 @@ export interface IMetadataRepository {
   listAlive(
     limit?: number,
     offset?: number,
-  ): Promise<{ items: Metadata[]; total: number }>;
+  ): Promise<{ items: Omit<Metadata, 'content'>[]; total: number }>;
 }

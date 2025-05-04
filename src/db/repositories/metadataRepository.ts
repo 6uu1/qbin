@@ -151,10 +151,21 @@ class MetadataRepository implements IMetadataRepository {
     if (offset >= totalNumber) return { items: [], total: totalNumber };
 
     const items = await this.run(() =>
-      this.db.select().from(this.t)
+      this.db.select({
+        fkey: this.t.fkey,
+        time: this.t.time,
+        expire: this.t.expire,
+        ip: this.t.ip,
+        mime: this.t.mime,
+        len: this.t.len,
+        pwd: this.t.pwd,
+        email: this.t.email,
+        uname: this.t.uname,
+        hash: this.t.hash
+      }).from(this.t)
         .where(gt(this.t.expire, now))
         .orderBy(dsql`${this.t.time} DESC`).limit(limit).offset(offset)
-        .execute()) as Metadata[];
+        .execute()) as Omit<Metadata, 'content'>[];
 
     return { items, total: totalNumber };
   }
