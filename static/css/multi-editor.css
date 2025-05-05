@@ -283,7 +283,7 @@ body::-webkit-scrollbar {
 }
 
 .content {
-    margin-top: 0;
+    margin-top: 8px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -292,7 +292,7 @@ body::-webkit-scrollbar {
     margin-left: auto;
     margin-right: auto;
     width: 100%;
-    padding: 16px;
+    padding: 24px 20px;
     box-sizing: border-box;
     position: relative;
     scrollbar-width: thin;
@@ -323,37 +323,43 @@ body::-webkit-scrollbar {
 
 /* 增强水墨效果的编辑器样式 */
 #editor {
-    margin-top: 12px;
+    margin-top: 16px;    /* 增加编辑器顶部边距 */
+    margin-bottom: 12px; /* 添加底部边距 */
     flex: 1;
     width: 100%;
-    height: calc(100% - 12px);
-    padding: 24px;
+    height: calc(100% - 28px); /* 调整为适应新的上下边距 */
+    padding: 32px 36px;  /* 增加内边距提高可读性 */
     border: none;
     resize: none;
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.7;  /* 增加行高提高可读性 */
     box-sizing: border-box;
     -webkit-appearance: none;
-    border-radius: 10px;
-    transition: all 0.4s ease;
+    border-radius: 12px;  /* 稍微增加圆角 */
+    transition: all 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);  /* 优化过渡动画 */
     box-shadow: var(--editor-shadow);
     color: var(--text-color);
     background-color: var(--editor-bg);
     overflow-y: auto;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.015em;  /* 微调字间距 */
+    font-weight: 400;  /* 确保字体重量适中 */
 }
 
 #editor:focus {
     outline: none;
     box-shadow: var(--editor-focus-shadow);
+    transform: translateY(-1px);  /* 轻微上浮效果 */
+    margin-bottom: 13px; /* 补偿上浮效果导致的空间变化 */
+    animation: gentle-focus 0.4s forwards;
 }
 
-/* Improved file drag & drop visual feedback */
+/* 优化编辑器在拖拽文件时的视觉反馈 */
 #editor.drag-over {
     background: var(--editor-drag-bg);
     box-shadow: var(--editor-drag-shadow);
     border: none;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);  /* 更有弹性的动画 */
+    transform: scale(1.005);  /* 微小的放大效果 */
 }
 
 /* Enhanced upload area with paper texture and improved visibility */
@@ -432,44 +438,19 @@ body::-webkit-scrollbar {
     color: var(--upload-text-hover-color);
 }
 
-/* 添加 key 水印样式，调整不透明度以提升体验 */
-.key-watermark {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 15px;
-    color: var(--watermark-color);
-    font-family: monospace;
-    padding: 4px 12px;
-    border-radius: 4px;
-    pointer-events: none;
-    user-select: none;
-    white-space: nowrap;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-    opacity: 0.75;
-    z-index: 10;
-    letter-spacing: 0.05em;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
-}
-
-/* Subtle animation when editor gets focus */
-.editor-focused .key-watermark {
-    opacity: 0.35;
-    transform: translateX(-50%) translateY(-1px);
-    transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
 /* ============ 移动端滚动条样式适配 ============ */
 @media (max-width: 768px) {
     #editor {
-        padding: 18px 20px;
+        margin-top: 12px;
+        margin-bottom: 8px;
+        padding: 24px 22px;  /* 适当调整移动端内边距 */
         font-size: 16px;
-        line-height: 1.5;
-        background: rgba(255, 255, 255, 0.98);
+        line-height: 1.6;
+        border-radius: 10px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03),
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        0 0 0 1px rgba(0, 0, 0, 0.01),
-        inset 0 0 16px rgba(0, 0, 0, 0.003);
+                    0 2px 8px rgba(0, 0, 0, 0.04),
+                    0 0 0 1px rgba(0, 0, 0, 0.01),
+                    inset 0 0 16px rgba(0, 0, 0, 0.003);
     }
 
     .upload-area {
@@ -491,14 +472,8 @@ body::-webkit-scrollbar {
 
     /* Better spacing on mobile */
     .content {
-        padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
-    }
-
-    /* 移动端适配：保持字体尺寸和位置 */
-    .key-watermark {
-        font-size: 14px;
-        top: 0;
-        /*transform: translateX(-50%);*/
+        padding: 20px 16px;
+        margin-top: 4px;
     }
 
     /* 针对 .content 容器的滚动条做小尺寸优化 */
@@ -536,7 +511,7 @@ body::-webkit-scrollbar {
     background-color: var(--editor-bg) !important;
     color: var(--text-color) !important;
     box-shadow: var(--editor-shadow) !important;
-    transition: background-color 0.1s ease, box-shadow 0.3s ease !important;
+    transition: background-color 0.2s ease, box-shadow 0.3s ease, transform 0.3s ease !important;
 }
 
 /* 确保各种交互状态下保持深色模式 */
@@ -582,6 +557,18 @@ body::-webkit-scrollbar {
     }
 }
 
+/* 确保聚焦时的效果在深色模式下同样美观 */
+.dark-theme #editor:focus {
+    box-shadow: var(--editor-focus-shadow) !important;
+    transform: translateY(-1px);
+}
+
+/* 添加轻微的打字动画效果 */
+@keyframes gentle-focus {
+    0% { box-shadow: var(--editor-shadow); transform: translateY(0); }
+    100% { box-shadow: var(--editor-focus-shadow); transform: translateY(-1px); }
+}
+
 /* 针对 .content 的滚动条色彩反转 */
 .dark-theme .content {
     scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -593,17 +580,6 @@ body::-webkit-scrollbar {
 
 .dark-theme .content::-webkit-scrollbar-thumb:hover {
     background-color: var(--scrollbar-thumb-hover);
-}
-
-.dark-theme .key-watermark {
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-    background: rgba(0, 0, 0, 0.1);
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
-}
-
-.dark-theme .editor-focused .key-watermark {
-    opacity: 0.3;
 }
 
 /* Keep the existing media query for system preference support */
@@ -673,16 +649,5 @@ body::-webkit-scrollbar {
 
     .content::-webkit-scrollbar-thumb:hover {
         background-color: var(--scrollbar-thumb-hover);
-    }
-
-    .key-watermark {
-        color: rgba(255, 255, 255, 0.8);
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-        background: rgba(0, 0, 0, 0.1);
-        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
-    }
-
-    .editor-focused .key-watermark {
-        opacity: 0.3;
     }
 }

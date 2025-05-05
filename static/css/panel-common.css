@@ -21,7 +21,6 @@
     width: 40px;
     height: 28px;
     padding-top: 6px;
-    /* 微调透明度和背景 */
     background: var(--bookmark-bg);
     border-radius: 0 0 8px 8px;
     border-style: none;
@@ -60,14 +59,14 @@
     position: fixed;
     top: 44px;
     right: 24px;
-    padding: 20px;
-    border-radius: 12px;
+    padding: 16px;
+    border-radius: 16px;
     box-shadow: var(--panel-shadow);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-8px);
     transition: all 0.3s ease;
-    width: 300px;
+    width: 320px;
     max-width: calc(100vw - 48px);
     backdrop-filter: blur(12px);
     z-index: 1000;
@@ -84,10 +83,10 @@
 
 /* 面板内部分组样式 - 水墨卡片效果 */
 .form-section {
-    margin-bottom: 16px;
-    padding: 14px;
+    margin-bottom: 20px;
+    padding: 16px;
     background: var(--section-bg);
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--section-border);
     box-shadow: var(--section-shadow);
     transition: all 0.3s ease;
@@ -106,78 +105,62 @@
     box-shadow: var(--section-hover-shadow);
 }
 
-/* 分组标题 - 水墨风格书法感 */
-.section-title {
-    font-size: 15px;
-    color: var(--section-title-color);
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--section-border);
-    text-shadow: var(--label-shadow);
-    letter-spacing: 0.06em;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-}
-
-/* 分组图标 - 水墨风格 */
-.section-icon {
-    margin-right: 6px;
-    opacity: 0.7;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
-    font-size: 16px;
-}
-
-/* 社交链接分组样式优化 */
+/* 社交链接导航改为标签样式 */
 .social-links-section {
-    display: flex;
-    justify-content: center;
+    margin-bottom: 16px;
 }
 
-/* 社交链接容器重新设计 */
+/* 社交链接容器改为标签式设计 */
 .social-links {
     display: flex;
-    gap: 10px;
-    justify-content: center;
-    padding: 8px 0;
-    position: relative;
-    border-bottom: 1px solid var(--section-border);
+    justify-content: space-between;
+    background: var(--section-bg);
+    border-radius: 10px;
+    border: 1px solid var(--section-border);
+    padding: 3px;
+    margin-bottom: 4px;
+    box-shadow: var(--section-shadow);
 }
 
-/* 社交链接水墨效果增强 */
+/* 社交链接水墨效果增强 - 改为标签式按钮 */
 .social-link {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
     height: 36px;
     border-radius: 8px;
     color: var(--social-link-color);
-    background: var(--social-link-bg);
-    border: 1px solid var(--social-link-border);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: transparent;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
     text-decoration: none;
     position: relative;
-    box-shadow: var(--social-link-shadow);
+    margin: 0 2px;
 }
 
 .social-link:hover {
-    transform: translateY(-3px);
     color: var(--social-link-hover-color);
     background: var(--social-link-hover-bg);
     box-shadow: var(--social-link-hover-shadow);
+}
+
+/* 添加active状态以显示当前选中的标签 */
+.social-link.active {
+    background: var(--social-link-active-bg, var(--social-link-hover-bg));
+    color: var(--social-link-active-color, var(--social-link-hover-color));
+    box-shadow: var(--social-link-active-shadow, var(--social-link-hover-shadow));
 }
 
 /* 修改表单标签样式 - 更有水墨感 */
 .form-label {
     font-size: 14px;
     color: var(--label-color);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     display: block;
     text-shadow: var(--label-shadow);
     letter-spacing: 0.03em;
     position: relative;
-    padding-left: 14px;
+    padding-left: 16px;
 }
 
 /* 标签前水墨点缀 */
@@ -205,7 +188,7 @@
 /* 修改输入框容器样式 */
 .input-wrapper {
     position: relative;
-    margin-bottom: 6px;
+    margin-bottom: 16px;
 }
 
 .input-wrapper:last-child {
@@ -217,9 +200,9 @@
 #password-input,
 .expiry-select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--input-border);
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 14px;
     -webkit-appearance: none;
     transition: all 0.25s ease;
@@ -242,28 +225,32 @@
 .option-toggle {
     display: flex;
     align-items: center;
-    padding: 8px 0;
+    padding: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
+    border-radius: 10px;
+    margin-top: 8px;
 }
 
 .option-toggle:hover {
+    background: var(--option-hover-bg, rgba(0, 0, 0, 0.03));
     color: var(--social-link-hover-color);
 }
 
 /* 自定义复选框 - 水墨风格 */
 .custom-checkbox {
     position: relative;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 1px solid var(--checkbox-border);
-    border-radius: 4px;
-    margin-right: 8px;
+    border-radius: 6px;
+    margin-right: 10px;
     background: var(--checkbox-bg);
     display: inline-block;
     vertical-align: middle;
     transition: all 0.2s ease;
     box-shadow: var(--checkbox-shadow);
+    flex-shrink: 0;
 }
 
 /* 复选框选中状态 */
@@ -279,7 +266,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     color: var(--checkbox-check-color);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1;
 }
 
@@ -299,29 +286,41 @@
 /* 移除编辑器链接的特殊悬停效果，统一使用社交链接效果 */
 .editor-link {
     position: relative;
-    /* 保留定位属性但移除特殊的悬停动画效果 */
 }
 
-/* 删除之前定义的特殊效果 */
-.editor-link::after {
-    display: none; /* 隐藏之前的悬停效果 */
+/* 向编辑器链接添加图标标题提示 */
+.social-link::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--tooltip-bg, rgba(0, 0, 0, 0.8));
+    color: var(--tooltip-color, white);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
 }
 
-.editor-link:hover::after {
-    display: none; /* 隐藏之前的悬停效果 */
+.social-link:hover::after {
+    opacity: 1;
+    visibility: visible;
+    bottom: -24px;
 }
 
-/* 代码编辑器和Markdown编辑器图标的样式调整 */
-.code-editor-link svg,
-.markdown-editor-link svg {
-    transform: scale(0.9);
-    transition: transform 0.3s ease; /* 添加过渡效果 */
+/* 为编辑器按钮添加悬停时的图标放大效果 */
+.social-link svg {
+    transition: transform 0.3s ease;
 }
 
-/* 为编辑器按钮添加悬停时的图标放大效果，与其他社交图标保持一致 */
-.code-editor-link:hover svg,
-.markdown-editor-link:hover svg {
-    transform: scale(1); /* 悬停时图标略微放大 */
+.social-link:hover svg {
+    transform: scale(1.1);
 }
 
 /* 添加确认对话框样式 */
@@ -332,7 +331,7 @@
     transform: translate(-50%, -50%) scale(0.95);
     background: var(--dialog-bg);
     padding: 24px;
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: var(--dialog-shadow);
     max-width: 320px;
     width: 85%;
@@ -364,8 +363,8 @@
 }
 
 .confirm-button {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 10px 16px;
+    border-radius: 8px;
     border: none;
     font-size: 14px;
     cursor: pointer;
@@ -408,7 +407,7 @@
     visibility: hidden;
     transition: all 0.3s ease;
     z-index: 999;
-    backdrop-filter: blur(1px);
+    backdrop-filter: blur(2px);
 }
 
 .confirm-overlay.active {
@@ -422,8 +421,8 @@
     top: env(safe-area-inset-top, 16px);
     left: 50%;
     transform: translateX(-50%) translateY(-120%);
-    padding: 10px 16px;
-    border-radius: 8px;
+    padding: 12px 18px;
+    border-radius: 10px;
     font-size: 14px;
     line-height: 1.4;
     max-width: 280px;
@@ -464,22 +463,17 @@
     display: none;
 }
 
-/* 当上传提示没有内容时直接隐藏，避免产生多余的"方块" */
-#upload-status:empty {
-    display: none;
-}
-
 /* 移动端适配 */
 @media (max-width: 768px) {
     .password-panel {
         top: 40px;
         right: 16px;
         padding: 16px;
-        width: 280px;
+        width: 300px;
     }
 
     .form-section {
-        padding: 12px;
+        padding: 14px;
     }
 
     .bookmark {
@@ -489,7 +483,12 @@
     /* Enhanced mobile upload status positioning */
     .upload-status {
         max-width: 85%;
-        padding: 8px 14px;
+        padding: 10px 16px;
         font-size: 13px;
+    }
+    
+    /* 改进移动端上社交链接尺寸 */
+    .social-link {
+        height: 40px; /* 增大触摸目标 */
     }
 }

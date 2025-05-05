@@ -6,17 +6,6 @@ class QBinEditorBase {
         this.isUploading = false;
         this.lastUploadedHash = '';
         this.autoUploadTimer = null;
-        this.emoji = {online: "☁️", inline: "☁", no: '⊘'}
-        this.status = this.emoji.online; // ☁️ 🌐 | 🏠✈️🚫 ✈ | ☁️ ☁ ❗❌
-        // 在线 远程、本地都有缓存 🟢 ✅
-        // 在线2 远程有缓存 🔵 ☁️
-        // 离线 本地有缓存 🟠 或 💾
-        // 错误 网络出错 🔴 或 ❌
-        // 同步中: 🔄 或 ⏳
-        // 需要授权: 🔒 或 🔑
-        // 禁用: ⛔ 或 🚫
-        // 如果当前地址为 "/"、"/p" 或 "/p/"，则自动生成 key 并更新地址
-
         this.loadContent().then();
         if (this.currentPath.key.length < 2) {
             const newKey = API.generateKey(6);
@@ -71,7 +60,6 @@ class QBinEditorBase {
                 const isNewPage = currentPath.key.length < 2 || key;
                 const isSamePath = currentPath.key === cacheData.path;
                 if (isNewPage || isSamePath) {
-                    this.status = this.emoji.inline;
                     this.setEditorContent(cacheData.content);
                     this.lastUploadedHash = cyrb53(cacheData.content);
                     return [true, cacheData.timestamp];
@@ -86,15 +74,11 @@ class QBinEditorBase {
 
     async loadContent() {
         const {key, pwd, render} = this.currentPath;
-        const keyWatermark = document.querySelector('.key-watermark')
         if (key.length > 1) {
             const [isCache, last] = await this.loadFromLocalCache();
             this.updateURL(key, pwd, "replaceState");
-            if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
-
             if (getTimestamp() - last > 3) {
                 await this.loadOnlineCache(key, pwd, isCache);
-                if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
             }
         } else {
             const cacheData = JSON.parse(sessionStorage.getItem('qbin/last') || '{"key": null}');
@@ -103,7 +87,6 @@ class QBinEditorBase {
             this.updateURL(cacheData.key, cacheData.pwd, "replaceState");
             document.getElementById('key-input').value = cacheData.key.trim() || '';
             document.getElementById('password-input').value = cacheData.pwd.trim() || '';
-            if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
         }
     }
 
@@ -153,7 +136,6 @@ class QBinEditorBase {
 
             // 处理404情况
             if (status === 404) {
-                this.status = this.emoji.online;
                 this.saveToLocalCache(true);
                 tips = "这是可用的访问路径";
                 if (uploadArea) {
@@ -177,18 +159,15 @@ class QBinEditorBase {
                 );
 
                 if (result) {
-                    this.status = this.emoji.online;
                     this.setEditorContent(content);
                     this.saveToLocalCache(true);
                     tips = "远程数据加载成功";
                 } else {
-                    this.status = this.emoji.online;
                     this.saveToLocalCache(true);
                     tips = "保留本地版本";
                 }
             } else {
                 // 如果本地为空或远程为空，直接加载远程内容
-                this.status = this.emoji.online;
                 if (!currentContent || !isCache) {
                     this.setEditorContent(content || "");
                 }
@@ -235,7 +214,6 @@ class QBinEditorBase {
         }
 
         this.updateUploadStatus(statusMessage, statusType);
-        const keyWatermark = document.querySelector('.key-watermark')
         try {
             this.isUploading = true;
             const keyInput = document.getElementById('key-input');
@@ -256,7 +234,6 @@ class QBinEditorBase {
                 if (!isFile) {
                     this.lastUploadedHash = chash;
                 }
-                this.status = this.emoji.online;
 
                 // Show more descriptive success message
                 if (isFile) {
@@ -266,8 +243,6 @@ class QBinEditorBase {
                 }
 
                 this.updateURL(key, pwd, action);
-                if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
-
                 if (isFile) {
                     setTimeout(() => {
                         window.location.assign(`/p/${key}/${pwd}`);
@@ -288,9 +263,6 @@ class QBinEditorBase {
             }
 
             this.updateUploadStatus(errorMsg, "error");
-            this.status = this.emoji.no;
-
-            if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
             console.error(error);
         } finally {
             this.isUploading = false;
@@ -298,7 +270,7 @@ class QBinEditorBase {
             // Reset upload button if needed
             if (isFile && document.querySelector('.upload-icon').innerHTML === "⏳") {
                 document.querySelector('.upload-icon').innerHTML = "📁";
-                document.querySelector('.upload-text').textContent = "支持Ctrl+V、拖放上传";
+                document.querySelector('.upload-text').textContent = "Ctrl+V或拖放上传";
             }
 
             setTimeout(() => {
@@ -542,12 +514,10 @@ class QBinEditorBase {
     initializeKeyAndPasswordSync() {
         const keyInput = document.getElementById('key-input');
         const passwordInput = document.getElementById('password-input');
-        const keyWatermark = document.querySelector('.key-watermark');
 
         // 初始化输入框值
         keyInput.value = this.currentPath.key;
         passwordInput.value = this.currentPath.pwd;
-        if (keyWatermark) keyWatermark.textContent = `${this.status} ${this.currentPath.key}`;
 
         // 监听输入变化，更新地址栏
         const updateURLHandler = () => {
@@ -558,9 +528,6 @@ class QBinEditorBase {
             if (trimmedKey.length >= 2) {
                 this.updateURL(trimmedKey, trimmedPwd, "replaceState");
             }
-
-            // 更新水印显示
-            if (keyWatermark) keyWatermark.textContent = `${this.emoji.inline} ${this.currentPath.key}`;
         };
 
         // 监听输入变化时更新水印

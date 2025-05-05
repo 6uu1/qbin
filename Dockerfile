@@ -1,5 +1,5 @@
 # ──────── build stage ─────────────────────
-FROM denoland/deno:2.2.11 AS build
+FROM denoland/deno:2.3.1 AS build
 
 ARG DB_CLIENT=sqlite
 ENV DB_CLIENT=${DB_CLIENT}
@@ -22,7 +22,7 @@ RUN sed -i -e 's/"deno"/"no-deno"/' node_modules/@libsql/client/package.json && 
     sed -i -e 's/"no-deno"/"deno"/' node_modules/@libsql/client/package.json
 
 # ──────── runtime stage ───────────────────
-FROM denoland/deno:2.2.11
+FROM denoland/deno:2.3.1
 WORKDIR /app
 
 ENV DB_CLIENT=sqlite

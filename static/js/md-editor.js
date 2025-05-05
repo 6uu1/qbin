@@ -28,7 +28,7 @@ class QBinMDEditor extends QBinEditorBase {
                     'search',
                 ];
             config.toolbarRight = ['mySettings', 'togglePreview', 'undo', 'redo', ];
-            config.sidebar = ['copy'];
+            config.sidebar = null;
             config.float = false;
             config.bubble = false;
         }else {
@@ -60,7 +60,7 @@ class QBinMDEditor extends QBinEditorBase {
                 ];
             config.toolbarRight = ['mySettings', 'togglePreview', 'wordCount'];
             config.bubble = ['bold', 'italic', 'underline', 'strikethrough', 'sub', 'sup', 'quote', '|', 'size', 'color'];
-            config.sidebar = ['mobilePreview', 'copy'];
+            config.sidebar = null;
         }
         return config
     }
