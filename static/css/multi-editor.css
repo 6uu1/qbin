@@ -409,17 +409,7 @@ body::-webkit-scrollbar {
     box-shadow: var(--upload-button-hover-shadow);
 }
 
-/* Enhanced upload icon with ink splash effect */
-.upload-icon {
-    font-size: 28px;
-    margin-bottom: 6px;
-    color: var(--upload-icon-color);
-    position: relative;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
-    transition: all 0.3s ease;
-}
-
-.upload-button:hover .upload-icon {
+.upload-button:hover {
     transform: scale(1.08);
     color: var(--upload-icon-color);
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
@@ -460,10 +450,6 @@ body::-webkit-scrollbar {
 
     .upload-button {
         padding: 18px;
-    }
-
-    .upload-icon {
-        font-size: 24px;
     }
 
     .upload-text {

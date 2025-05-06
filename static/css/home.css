@@ -1425,14 +1425,12 @@ select.loading {
 }
 
 .radio-option input[type="radio"]:checked + .radio-label svg {
-    stroke: var(--primary-color);
-    transform: scale(1.1); /* 图标轻微放大 */
+    transform: scale(1.1); /* 保留图标轻微放大效果 */
 }
 
 /* 活跃状态 */
 .radio-label.active-theme svg,
 .radio-label.active-editor svg {
-    stroke: var(--primary-color);
     stroke-width: 2.5px;
 }
 
@@ -1726,7 +1724,7 @@ select.loading {
         margin-bottom: 0; /* 重置桌面端的底部边距 */
         flex-direction: row; /* 在移动端恢复为横向布局 */
     }
-    
+
     /* 其他移动端样式保持不变 */
 }
 
@@ -1734,24 +1732,24 @@ select.loading {
     .user-info {
         display: none;
     }
-    
+
     .user-profile {
         padding: 8px;
     }
-    
+
     .user-avatar {
         width: 32px;
         height: 32px;
     }
-    
+
     .sidebar-footer .logout-link .nav-text {
         display: none;
     }
-    
+
     .sidebar-footer .logout-link {
         padding: 8px;
     }
-    
+
     .sidebar-footer .logout-link svg {
         width: 24px;
         height: 24px;
