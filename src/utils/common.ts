@@ -28,5 +28,5 @@ export function cyrb53_str(str: string, seed = 8125): number {
 }
 
 export function generateKey(): string {
-  return `${crypto.randomUUID().split("-").pop()}${Date.now()}`;
+  return `${crypto.randomUUID().split("-").pop()}${Date.now()}`.toLowerCase();
 }

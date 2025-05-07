@@ -6,9 +6,11 @@ import {generateKey} from "./common.ts";
 /** 解析 /:key/:pwd? 并完成合法性校验 */
 export function parsePathParams(
   params: Record<string, string | undefined>,
+  operation: 'save' | 'other' = 'other'
 ): { key: string; pwd: string } {
-  const key = params.key;
-  const pwd = params.pwd;
+
+  const key = params.key?.toLowerCase() || (operation === 'save' ? generateKey() : "");
+  const pwd = params.pwd ?? "";
 
   if (
     key && (key.length > 32 || key.length < 2 || !VALID_CHARS_REGEX.test(key))
@@ -19,8 +21,8 @@ export function parsePathParams(
   ) throw new PasteError(403, ResponseMessages.PATH_UNAVAILABLE);
 
   return {
-    key: key ?? generateKey(),
-    pwd: pwd ?? "",
+    key: key,
+    pwd: pwd,
   };
 }
 

@@ -419,7 +419,8 @@ const storage = new StorageManager();
 const API = {
     generateKey(length = 10) {
         // 默认去掉了容易混淆的字符：oOLl,9gq,Vv,Uu,I1
-        const chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+        // const chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
         return Array.from(
             {length},
             () => chars.charAt(Math.floor(Math.random() * chars.length))

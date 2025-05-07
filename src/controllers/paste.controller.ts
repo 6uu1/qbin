@@ -70,10 +70,8 @@ export async function queryRaw(ctx: Context<AppState>) {
 
 /** POST/PUT /save/:key/:pwd? 统一入口：若 key 已存在则更新，否则创建 */
 export async function save(ctx: Context<AppState>) {
-  const { key, pwd } = parsePathParams(ctx.params);
-  if (reservedPaths.has(key.toLowerCase())) {
-    throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
-  }
+  const { key, pwd } = parsePathParams(ctx.params, 'save');
+  if (reservedPaths.has(key)) throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
 
   const repo = await createMetadataRepository();
   const meta = await isCached(key, pwd, repo);
@@ -86,7 +84,7 @@ export async function save(ctx: Context<AppState>) {
 /** DELETE /delete/:key/:pwd? */
 export async function remove(ctx: Context<AppState>) {
   const { key, pwd } = parsePathParams(ctx.params);
-  if (reservedPaths.has(key.toLowerCase())) throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
+  if (reservedPaths.has(key)) throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
   const repo = await createMetadataRepository();
   const meta = await isCached(key, pwd, repo);
   if (!meta || (meta.expire ?? 0) < getTimestamp()) throw new Response(ctx, 404, ResponseMessages.CONTENT_NOT_FOUND);
