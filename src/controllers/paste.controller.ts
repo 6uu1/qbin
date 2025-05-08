@@ -92,6 +92,7 @@ export async function remove(ctx: Context<AppState>) {
   const email = ctx.state.session?.get("user")?.email;
   if (email !== meta.email) throw new Response(ctx, 403, ResponseMessages.PERMISSION_DENIED);
 
+  memCache.delete(key);
   queueMicrotask(async () => {
     await kv.delete([PASTE_STORE, key])
     await repo.delete(key);
