@@ -673,19 +673,6 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover {
     color: var(--text);
 }
 
-.password-dialog .lock-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    margin: 0 auto 20px;
-    border-radius: 50%;
-    background: rgba(var(--primary-rgb), 0.08);
-    color: var(--primary);
-    font-size: 22px;
-}
-
 .password-input-container {
     display: flex;
     gap: 8px;
@@ -752,13 +739,6 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover {
         margin: 20px auto;
         padding: 24px 20px;
         max-width: 320px;
-    }
-
-    .password-dialog .lock-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-        margin-bottom: 16px;
     }
 }
 

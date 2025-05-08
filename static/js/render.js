@@ -10,6 +10,7 @@ class QBinViewer {
         this.lastScrollY = 0;
         this.scrollThreshold = 20;
         this.ticking = false;
+        this.edit = 'e';
         this.init();
         this.initScrollHandler();
     }
@@ -291,6 +292,7 @@ class QBinViewer {
         let language = contentType.includes("text/x-")? contentType.substring(7): contentType.substring(5);
         language = language.split(";")[0];
         const contentText = contentType.includes("markdown")?await response.text():`\`\`\`${language}\n${await response.text()}`;
+        this.edit = contentType.includes("markdown")?'m':'c';
         this.initViewer(contentText, contentType);
         this.hideLoading();
     }
@@ -461,7 +463,7 @@ class QBinViewer {
             'Delete': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="24" stroke-dashoffset="24" d="M12 20h5c0.5 0 1 -0.5 1 -1v-14M12 20h-5c-0.5 0 -1 -0.5 -1 -1v-14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="24;0"/></path><path stroke-dasharray="20" stroke-dashoffset="20" d="M4 5h16"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.2s" values="20;0"/></path><path stroke-dasharray="8" stroke-dashoffset="8" d="M10 4h4M10 9v7M14 9v7"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="8;0"/></path></g></svg>',
             'Download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><mask id="lineMdCloudAltDownloadLoop0"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="64" stroke-dashoffset="64" d="M7 19h11c2.21 0 4 -1.79 4 -4c0 -2.21 -1.79 -4 -4 -4h-1v-1c0 -2.76 -2.24 -5 -5 -5c-2.42 0 -4.44 1.72 -4.9 4h-0.1c-2.76 0 -5 2.24 -5 5c0 2.76 2.24 5 5 5Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/><set fill="freeze" attributeName="opacity" begin="0.7s" to="0"/></path><g fill="#fff" stroke="none" opacity="0"><circle cx="12" cy="10" r="6"><animate attributeName="cx" begin="0.7s" dur="30s" repeatCount="indefinite" values="12;11;12;13;12"/></circle><rect width="9" height="8" x="8" y="12"/><rect width="15" height="12" x="1" y="8" rx="6"><animate attributeName="x" begin="0.7s" dur="21s" repeatCount="indefinite" values="1;0;1;2;1"/></rect><rect width="13" height="10" x="10" y="10" rx="5"><animate attributeName="x" begin="0.7s" dur="17s" repeatCount="indefinite" values="10;9;10;11;10"/></rect><set fill="freeze" attributeName="opacity" begin="0.7s" to="1"/></g><g fill="#000" fill-opacity="0" stroke="none"><circle cx="12" cy="10" r="4"><animate attributeName="cx" begin="0.7s" dur="30s" repeatCount="indefinite" values="12;11;12;13;12"/></circle><rect width="9" height="6" x="8" y="12"/><rect width="11" height="8" x="3" y="10" rx="4"><animate attributeName="x" begin="0.7s" dur="21s" repeatCount="indefinite" values="3;2;3;4;3"/></rect><rect width="9" height="6" x="12" y="12" rx="3"><animate attributeName="x" begin="0.7s" dur="17s" repeatCount="indefinite" values="12;11;12;13;12"/></rect><set fill="freeze" attributeName="fill-opacity" begin="0.7s" to="1"/></g><g fill="#fff" stroke="none"><path d="M10.5 10h3v0h-3z"><animate fill="freeze" attributeName="d" begin="0.7s" dur="0.2s" values="M10.5 10h3v0h-3z;M10.5 10h3v4h-3z"/></path><path d="M8 13h8l-4 0z"><animate fill="freeze" attributeName="d" begin="0.9s" dur="0.1s" values="M8 13h8l-4 0z;M8 13h8l-4 4z"/><animateMotion begin="1s" calcMode="linear" dur="1.5s" keyPoints="0;0.25;0.5;0.75;1" keyTimes="0;0.1;0.5;0.8;1" path="M0 0v1v-2z" repeatCount="indefinite"/></path></g></g></mask><rect width="24" height="24" fill="currentColor" mask="url(#lineMdCloudAltDownloadLoop0)"/></svg>'
         };
-        
+
         return icons[buttonType] || null;
     }
 
@@ -497,7 +499,7 @@ class QBinViewer {
         } catch (e) {
             console.error('Fork处理失败:', e);
         }
-        const originalEditor = getCookie('qbin-editor') || 'm';
+        const originalEditor = this.edit || 'm';
         window.location.assign(`/${originalEditor}`);
     }
 

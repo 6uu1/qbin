@@ -119,9 +119,9 @@ export async function updateCache(key: string, metadata: Metadata): Promise<void
 /**
  * 删除缓存 (内存 + Cache API)
  */
-export async function deleteCache(key: string, pwd: string, expire: number) {
+export async function deleteCache(key: string, meta) {
   try {
-    memCache.set(key, {'pwd': pwd, expire: expire});
+    memCache.set(key, {'pwd': meta.pwd, expire: meta.expire});
   } catch (error) {
     console.error('Cache deletion error:', error);
   }

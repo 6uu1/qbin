@@ -6,6 +6,7 @@ import {
   kv,
   memCache,
   cacheBroadcast,
+  deleteCache,
 } from "../utils/cache.ts";
 import {
   getTimestamp,
@@ -92,7 +93,7 @@ export async function remove(ctx: Context<AppState>) {
   const email = ctx.state.session?.get("user")?.email;
   if (email !== meta.email) throw new Response(ctx, 403, ResponseMessages.PERMISSION_DENIED);
 
-  memCache.delete(key);
+  await deleteCache(key, meta);
   queueMicrotask(async () => {
     await kv.delete([PASTE_STORE, key])
     await repo.delete(key);
