@@ -33,10 +33,10 @@ export const cacheBroadcast = new BroadcastChannel(CACHE_CHANNEL);
 cacheBroadcast.onmessage = async (event: MessageEvent) => {
   const { type, key, metadata } = event.data;
   if (!key) return;
-  if (type === "update" && key && metadata) {
-    await updateCache(key, metadata);
+  if (type === "update" && key) {
+    await deleteCache(key, metadata);
   } else if (type === "delete" && key) {
-    await updateCache(key, metadata);
+    await deleteCache(key, metadata);
   }
 };
 
@@ -83,7 +83,7 @@ export async function getCachedContent(key: string, pwd?: string, repo): Promise
   try {
     const cache = await checkCached(key, pwd, repo);
     if (cache === null) return cache;
-    if (cache !== true && "content" in cache) return cache;
+    if ("content" in cache) return cache;
 
     const dbData = await repo.getByFkey(key);
     if (!dbData) return null;
@@ -112,7 +112,7 @@ export async function updateCache(key: string, metadata: Metadata): Promise<void
  */
 export async function deleteCache(key: string, meta) {
   try {
-    memCache.set(key, {'pwd': meta.pwd, expire: meta.expire});
+    memCache.delete(key);
   } catch (error) {
     console.error('Cache deletion error:', error);
   }

@@ -93,16 +93,18 @@ export async function remove(ctx: Context<AppState>) {
   const email = ctx.state.session?.get("user")?.email;
   if (email !== meta.email) throw new Response(ctx, 403, ResponseMessages.PERMISSION_DENIED);
 
+  delete meta.content;
   await deleteCache(key, meta);
   queueMicrotask(async () => {
     await kv.delete([PASTE_STORE, key])
     await repo.delete(key);
   });
-  // meta.len = 0;
-  // meta.content = new Uint8Array(0);
+  cacheBroadcast.postMessage({ type: "delete", key, metadata: meta });
+
+  // TODO 回收站 定时清理
   // if (meta.expire > 0) meta.expire = -meta.expire;
   // await updateCache(key, meta)
-  // cacheBroadcast.postMessage({ type: "delete", key, metadata: meta });
+  // cacheBroadcast.postMessage({ type: "update", key, metadata: meta });
   // queueMicrotask(async () => {
   //   await kv.set([PASTE_STORE, key], meta)
   //   await repo.update(key, {expire: meta.expire});
@@ -135,16 +137,20 @@ async function createNew(
     return new Response(ctx, 409, ResponseMessages.KEY_EXISTS);
   }
 
-  // 先写内存缓存
-  memCache.set(key, metadata);
+  // 写入缓存
+  await updateCache(key, metadata);
 
   queueMicrotask(async () => {
     try {
-      await repo.create(metadata);
-      await updateCache(key, metadata);
+      const result = await repo.create(metadata);
+      if (!result) {
+        console.warn('Failed to create in repo, metadata:', key);
+        await deleteCache(key, metadata);
+        await kv.delete([PASTE_STORE, key]);
+      }
     } catch (err) {
       console.error(err);
-      memCache.delete(key);
+      await deleteCache(key, metadata);
       await kv.delete([PASTE_STORE, key]);
     }
   });
@@ -169,16 +175,49 @@ async function updateExisting(
   }
 
   const metadata = await assembleMetadata(ctx, key, pwd);
-  memCache.set(key, metadata);
+
+  await kv.set([PASTE_STORE, key], {
+      email: metadata.email,
+      name: metadata.uname,
+      ip: metadata.ip,
+      len: metadata.len,
+      expire: metadata.expire,
+      hash: metadata.hash,
+      pwd,
+    });
+  await updateCache(key, metadata);
 
   queueMicrotask(async () => {
     try {
-      await repo.update(key, metadata);
-      await updateCache(key, metadata);
-      cacheBroadcast.postMessage({ type: "update", key, metadata });
+      const result = await repo.update(key, metadata)
+      if (!result) {
+        console.warn('Failed to update in repo, metadata:', key);
+        await updateCache(key, oldMeta);
+        await kv.set([PASTE_STORE, key], {
+          email: oldMeta.email,
+          name: oldMeta.uname,
+          ip: oldMeta.ip,
+          len: oldMeta.len,
+          expire: oldMeta.expire,
+          hash: oldMeta.hash,
+          pwd,
+        });
+      }else {
+        delete metadata.content;
+        cacheBroadcast.postMessage({ type: "update", key, metadata });
+      }
     } catch (err) {
       console.error(err);
-      memCache.set(key, oldMeta); // 回滚
+      await updateCache(key, oldMeta); // 回滚
+      await kv.set([PASTE_STORE, key], {
+          email: oldMeta.email,
+          name: oldMeta.uname,
+          ip: oldMeta.ip,
+          len: oldMeta.len,
+          expire: oldMeta.expire,
+          hash: oldMeta.hash,
+          pwd,
+        });
     }
   });
 
