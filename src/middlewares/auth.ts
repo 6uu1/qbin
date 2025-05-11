@@ -184,7 +184,7 @@ export async function authMiddleware(ctx: Context, next: () => Promise<unknown>)
         httpOnly: true,
         sameSite: "lax"
       });
-      if (!(isPrefixPathAuth || isExactPathAuth)) {
+      if (!(isPrefixPathAuth || isExactPathAuth || currentPath === "/home")) {
         return new Response(ctx, 401, "Cookie expired");
       }
     }

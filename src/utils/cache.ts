@@ -87,7 +87,6 @@ export async function getCachedContent(key: string, pwd?: string, repo): Promise
 
     const dbData = await repo.getByFkey(key);
     if (!dbData) return null;
-    if (!checkPassword(dbData.pwd, pwd)) return null;
     await updateCache(key, dbData);
     return dbData;
   } catch (error) {

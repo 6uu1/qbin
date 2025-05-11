@@ -19,7 +19,7 @@ export const DENO_KV_PROJECT_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0
 
 export const jwtSecret = get_env("JWT_SECRET", "input-your-jwtSecret");  // 从环境变量获取jwt密钥
 export const exactPaths = ["/favicon.ico", "/document", "/api/health", "/login", "/pwa-loader", "/service-worker.js", "/manifest.json"]
-export const prefixPaths = ['/r/', '/p/', '/static/', '/api/login/']
+export const prefixPaths = ['/r/', '/e/', '/c/', '/m/', '/p/', '/static/', '/api/login/']
 export const basePath = Deno.cwd();
 
 export const EMAIL = get_env("ADMIN_EMAIL", "admin@qbin.github");
