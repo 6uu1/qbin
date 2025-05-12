@@ -1,10 +1,9 @@
 /**
  * QBin Progressive Web App - Service Worker
- * 支持HTTP/HTTPS协议和降级方案
  */
 
 // 缓存配置
-const CACHE_VERSION = 'v1.65';
+const CACHE_VERSION = 'v1.66';
 const STATIC_CACHE_NAME = `qbin-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `qbin-dynamic-${CACHE_VERSION}`;
 const CDN_CACHE_NAME = `qbin-cdn-${CACHE_VERSION}`;
@@ -30,17 +29,15 @@ const isSecureContext = self.location.protocol === 'https:' ||
 const STATIC_RESOURCES = [
     '/favicon.ico',
     '/manifest.json',
-    '/document',
-    '/static/',
-    '/p/',
-    '/home',
     '/pwa-loader',
+    '/home',
+    '/document',
 ];
 
 // CDN资源
 const CDN_RESOURCES = [
     'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/',
-    'https://cdn.jsdelivr.net/npm/cherry-markdown@0.9.1/dist/',
+    'https://cdn.jsdelivr.net/npm/cherry-markdown@0.8.58/dist/',
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/',
     'https://cdn.jsdelivr.net/npm/echarts@4.6.0/dist/',
     'https://cdn.jsdelivr.net/npm/mermaid@8.11.1/dist/',
@@ -53,10 +50,13 @@ const PAGE_TEMPLATES = [
     '/e',
     '/c',
     '/m',
+    '/p',
 ];
 
 // 实时数据 - 采用网络优先策略
-const REALTIME_PATHS = [];
+const REALTIME_PATHS = [
+    '/r/'
+];
 
 /**
  * 安装事件处理 - 初始化缓存并预缓存关键资源
@@ -64,11 +64,8 @@ const REALTIME_PATHS = [];
 self.addEventListener('install', event => {
     log('安装事件触发');
 
-    // 根据上下文选择缓存策略
-    const cachingStrategy = isSecureContext ? fullCachingStrategy : limitedCachingStrategy;
-
     event.waitUntil(
-        cachingStrategy()
+        fullCachingStrategy()
             .then(() => {
                 log('缓存初始化完成');
                 return self.skipWaiting(); // 立即激活新的 service worker
@@ -115,28 +112,6 @@ async function fullCachingStrategy() {
 }
 
 /**
- * 有限缓存策略 - 用于HTTP环境
- */
-async function limitedCachingStrategy() {
-    try {
-        const staticCache = await caches.open(STATIC_CACHE_NAME);
-        const criticalResources = [
-            '/favicon.ico',
-            '/static/css/panel-common.css',
-            '/static/js/utils.js'
-        ];
-
-        await Promise.all([
-            staticCache.addAll(criticalResources).catch(err => warn('关键资源缓存失败:', err)),
-            caches.open(DYNAMIC_CACHE_NAME)
-        ]);
-        return Promise.resolve();
-    } catch (err) {
-        return Promise.reject(err);
-    }
-}
-
-/**
  * 请求拦截处理
  */
 self.addEventListener('fetch', event => {
@@ -150,14 +125,6 @@ self.addEventListener('fetch', event => {
     if (['.pem', '.key', '.cert'].some(ext => url.pathname.includes(ext))) return;
     if (['token=', 'auth=', 'key='].some(param => url.search.includes(param))) return;
 
-    // 非安全上下文(HTTP)环境下的处理
-    if (!isSecureContext) {
-        if (isStaticResource(request.url) && url.origin === self.location.origin) {
-            event.respondWith(limitedCacheStrategy(request));
-        }
-        return;
-    }
-
     // 安全上下文(HTTPS)环境下的处理
     try {
         // CDN或跨域资源处理
@@ -169,51 +136,19 @@ self.addEventListener('fetch', event => {
         const path = url.pathname;
 
         // 处理根路径和模板路径
-        if (path === '/' || path.match(/^\/[cme](\/.*)?$/)) {
+        if (path === '/' || isPageTemplate(path)) {
             event.respondWith(handleTemplateRoutes(request));
             return;
         }
 
         // 基于资源类型应用不同的缓存策略
-        if (isStaticResource(request.url) || isPageTemplate(request.url)) {
+        if (isStaticResource(path)) {
             event.respondWith(cacheFirstStrategy(request));
         }
     } catch (err) {
         error('缓存策略处理错误:', err);
     }
 });
-
-/**
- * 有限缓存策略 - 用于HTTP环境
- */
-async function limitedCacheStrategy(request) {
-    try {
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) return cachedResponse;
-
-        const networkResponse = await fetch(request);
-        if (networkResponse && networkResponse.status === 200) {
-            const criticalResources = [
-                '/favicon.ico',
-                '/static/css/panel-common.css',
-                '/static/js/utils.js'
-            ];
-
-            const url = new URL(request.url);
-            if (criticalResources.some(path => url.pathname === path)) {
-                const cache = await caches.open(STATIC_CACHE_NAME);
-                cache.put(request, networkResponse.clone());
-            }
-        }
-        return networkResponse;
-    } catch (err) {
-        warn('HTTP环境下缓存处理失败:', err);
-        return new Response('Network error occurred', {
-            status: 503,
-            statusText: 'Service Unavailable'
-        });
-    }
-}
 
 /**
  * 验证并更新缓存 - 统一处理本地资源和CDN资源
@@ -529,8 +464,8 @@ async function preCacheCriticalCdnResources() {
     try {
         const cdnCache = await caches.open(CDN_CACHE_NAME);
         const criticalCdnResources = [
-            'https://cdn.jsdelivr.net/npm/cherry-markdown@0.9.1/dist/cherry-markdown.core.js',
-            'https://cdn.jsdelivr.net/npm/cherry-markdown@0.9.1/dist/cherry-markdown.min.css',
+            'https://cdn.jsdelivr.net/npm/cherry-markdown@0.8.58/dist/cherry-markdown.core.js',
+            'https://cdn.jsdelivr.net/npm/cherry-markdown@0.8.58/dist/cherry-markdown.min.css',
             'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/editor/editor.main.css',
@@ -567,19 +502,16 @@ async function preCacheCriticalCdnResources() {
 }
 
 // 资源类型判断函数
-function isStaticResource(url) {
-    const path = new URL(url).pathname;
-    return STATIC_RESOURCES.some(staticPath => path.startsWith(staticPath));
+function isStaticResource(path) {
+    return STATIC_RESOURCES.some(staticPath => path.startsWith(staticPath)) || path.startsWith('/static/');
 }
 
-function isPageTemplate(url) {
-    const path = new URL(url).pathname;
+function isPageTemplate(path) {
     return PAGE_TEMPLATES.some(templatePath => path === templatePath) ||
-           path.match(/^\/[cme](\/.*)?$/);
+           path.match(/^\/[cmep](\/.*)?$/);
 }
 
-function isRealtimeResource(url) {
-    const path = new URL(url).pathname;
+function isRealtimeResource(path) {
     return REALTIME_PATHS.some(realtimePath => path.startsWith(realtimePath));
 }
 
