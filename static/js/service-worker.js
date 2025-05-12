@@ -3,7 +3,7 @@
  */
 
 // 缓存配置
-const CACHE_VERSION = 'v1.66';
+const CACHE_VERSION = 'v1.67';
 const STATIC_CACHE_NAME = `qbin-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `qbin-dynamic-${CACHE_VERSION}`;
 const CDN_CACHE_NAME = `qbin-cdn-${CACHE_VERSION}`;
@@ -40,7 +40,7 @@ const CDN_RESOURCES = [
     'https://cdn.jsdelivr.net/npm/cherry-markdown@0.8.58/dist/',
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/',
     'https://cdn.jsdelivr.net/npm/echarts@4.6.0/dist/',
-    'https://cdn.jsdelivr.net/npm/mermaid@8.11.1/dist/',
+    'https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/',
     'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
     'https://notion-avatar.app/api/svg/',
 ];
