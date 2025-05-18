@@ -16,6 +16,7 @@ export async function syncDBToKV(ctx: Context<AppState>, repo) {
     for (const r of rows) {
       dbMap.set(r.fkey, {
         email: r.email,
+        title: r.title,
         name: r.uname,
         ip: r.ip,
         len: r.len,

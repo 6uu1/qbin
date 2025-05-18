@@ -54,6 +54,11 @@
     <div class="password-container">
         <div class="bookmark"></div>
         <div class="password-panel">
+            <div class="input-wrapper title-wrapper">
+                <div class="input-group">
+                    <input type="text" id="title-input" placeholder="        为此内容添加标题..." maxlength="128" autocomplete="off" class="title-input"/>
+                </div>
+            </div>
             <div class="social-links-section">
                 <div class="social-links">
                     <a title="Simple Editor" href="javascript:void(0)" class="social-link editor-link code-editor-link" id="edit1-button">
@@ -133,11 +138,11 @@
                         <option value="shell">Shell/Bash</option>
                     </select>
                 </div>
-                <div class="option-toggle">
-                    <span class="custom-checkbox" id="encrypt-checkbox"></span>
-                    <span class="option-text"><del>端到端加密</del> (开发中)</span>
-                    <input type="checkbox" id="encryptData" name="encryptData" style="display:none">
-                </div>
+<!--                <div class="option-toggle">-->
+<!--                    <span class="custom-checkbox" id="encrypt-checkbox"></span>-->
+<!--                    <span class="option-text"><del>端到端加密</del> (开发中)</span>-->
+<!--                    <input type="checkbox" id="encryptData" name="encryptData" style="display:none">-->
+<!--                </div>-->
             </div>
             <div class="panel-footer">
                 <button type="button" id="undo-settings" class="panel-button secondary">撤销</button>

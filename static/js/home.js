@@ -207,7 +207,7 @@ class QBinHome {
                     };
 
                     // 添加新的监听器，使用passive选项提高滚动性能
-                    scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
+                    scrollContainer.addEventListener('scroll', scrollHandler, {passive: true});
 
                     // 保存处理函数引用，以便在需要时可以移除
                     this.scrollHandlers[viewType] = scrollHandler;
@@ -233,6 +233,7 @@ class QBinHome {
         const menuView = document.getElementById('menu-view');
         const menuCopyLink = document.getElementById('menu-copy-link');
         const menuDelete = document.getElementById('menu-delete');
+        const menuDetails = document.getElementById('menu-details');
 
         if (!contextMenu) return;
 
@@ -268,18 +269,28 @@ class QBinHome {
                     const url = `${window.location.origin}/r/${this.selectedItem.fkey}/${this.selectedItem.pwd || ''}`;
 
                     ClipboardUtil.copyToClipboard(url)
-                      .then(result => {
-                        if (result.success) {
-                          this.showToast("复制成功！");
-                        } else {
-                          this.showToast("复制失败，请手动复制", "error");
-                          const modal = ClipboardUtil.createManualCopyUI(url);
-                          document.body.appendChild(modal);
-                          modal.addEventListener('manualCopy', () => {
-                            this.showToast("已手动复制");
-                          });
-                        }
-                      });
+                        .then(result => {
+                            if (result.success) {
+                                this.showToast("复制成功！");
+                            } else {
+                                this.showToast("复制失败，请手动复制", "error");
+                                const modal = ClipboardUtil.createManualCopyUI(url);
+                                document.body.appendChild(modal);
+                                modal.addEventListener('manualCopy', () => {
+                                    this.showToast("已手动复制");
+                                });
+                            }
+                        });
+                }
+                this.hideContextMenu();
+            });
+        }
+
+        if (menuDetails) {
+            menuDetails.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.selectedItem) {
+                    this.showFileDetails(this.selectedItem);
                 }
                 this.hideContextMenu();
             });
@@ -347,10 +358,13 @@ class QBinHome {
             gridContainer.addEventListener('dblclick', (e) => {
                 const gridItem = e.target.closest('.grid-item');
                 if (gridItem) {
-                    const fkey = gridItem.dataset.fkey;
-                    const pwd = gridItem.dataset.pwd;
-                    if (fkey) {
-                        window.open(`/p/${fkey}/${pwd}`, '_blank', 'noopener');
+                    const actionBtn = gridItem.querySelector('.action-btn');
+                    if (actionBtn) {
+                        const fkey = actionBtn.getAttribute('data-fkey');
+                        const pwd = actionBtn.getAttribute('data-pwd');
+                        if (fkey) {
+                            window.open(`/p/${fkey}/${pwd}`, '_blank', 'noopener');
+                        }
                     }
                 }
             });
@@ -360,11 +374,14 @@ class QBinHome {
                 const gridItem = e.target.closest('.grid-item');
                 if (gridItem) {
                     e.preventDefault();
-                    const fkey = gridItem.dataset.fkey;
-                    if (fkey) {
-                        const item = this.storageItems.find(item => String(item.fkey) === fkey);
-                        if (item) {
-                            this.showContextMenu(e.clientX, e.clientY, item);
+                    const actionBtn = gridItem.querySelector('.action-btn');
+                    if (actionBtn) {
+                        const fkey = actionBtn.getAttribute('data-fkey');
+                        if (fkey) {
+                            const item = this.storageItems.find(item => String(item.fkey) === fkey);
+                            if (item) {
+                                this.showContextMenu(e.clientX, e.clientY, item);
+                            }
                         }
                     }
                 }
@@ -423,8 +440,8 @@ class QBinHome {
 
         // 过滤匹配的文件
         const filteredItems = this.storageItems.filter(item => {
-            const fileName = item.fkey.toLowerCase();
-            return fileName.includes(searchTerm);
+            const title = (decodeURIComponent(item.title) || item.fkey).toLowerCase();
+            return title.includes(searchTerm);
         });
 
         // 渲染过滤后的文件
@@ -606,7 +623,7 @@ class QBinHome {
             }
         }
         if (!scrollContainer) return;
-        const { scrollTop, clientHeight, scrollHeight } = scrollContainer;
+        const {scrollTop, clientHeight, scrollHeight} = scrollContainer;
         if (scrollHeight < 100) {
             return;
         }
@@ -656,7 +673,7 @@ class QBinHome {
             }
 
             // 从结果中获取数据和分页信息
-            const { items, pagination } = result.data;
+            const {items, pagination} = result.data;
 
             // 判断数据是否有效
             if (!items || items.length === 0) {
@@ -829,7 +846,7 @@ class QBinHome {
     // 触发视图切换事件
     triggerViewChangedEvent(viewType) {
         const viewChangedEvent = new CustomEvent('viewChanged', {
-            detail: { view: viewType }
+            detail: {view: viewType}
         });
         document.dispatchEvent(viewChangedEvent);
     }
@@ -868,7 +885,7 @@ class QBinHome {
             if (result.status !== 200 || !result.data) {
                 throw new Error(result.message || '加载数据失败');
             }
-            const { items, pagination } = result.data;
+            const {items, pagination} = result.data;
             // 将数据添加到存储数组
             if (isReset) {
                 this.storageItems = [...items];
@@ -907,6 +924,10 @@ class QBinHome {
             // 重置加载状态
             this.isLoadingData = false;
         }
+    }
+
+    getItemDisplayName(item) {
+        return item.title && item.title.trim() ? decodeURIComponent(item.title.trim()) : item.fkey;
     }
 
     renderListView(items, container, isReset = false) {
@@ -949,12 +970,12 @@ class QBinHome {
 
         // 预先创建模板元素，减少DOM操作
         const template = document.createElement('template');
-        const btnIcon = isMobile() ? '<span style="font-size: 20px; font-weight: bold;">…</span>': '<span style="font-size: 8px; letter-spacing: 1px;">●●●</span>';
+        const btnIcon = isMobile() ? '<span style="font-size: 20px; font-weight: bold;">…</span>' : '<span style="font-size: 8px; letter-spacing: 1px;">●●●</span>';
 
         // 渲染当前批次的项目
         for (let i = startIndex; i < endIndex; i++) {
             const item = items[i];
-            const fileName = item.fkey;
+            const fileName = this.getItemDisplayName(item);
             const fileIcon = this.getFileTypeIcon(item.mime, 20);
 
             // 使用模板字符串创建元素，减少innerHTML操作
@@ -962,7 +983,7 @@ class QBinHome {
                 <div class="list-item">
                     <span class="file-name">
                         <span class="file-icon">${fileIcon}</span>
-                        ${fileName}
+                        <span class="file-name-text">${fileName}</span>
                     </span>
                     <span class="file-size">${formatSize(item.len)}</span>
                     <span class="file-time">${this.formatDate(item.time)}</span>
@@ -976,11 +997,6 @@ class QBinHome {
 
             // 获取创建的元素
             const listItem = template.content.firstElementChild.cloneNode(true);
-
-            // 使用事件委托减少事件监听器数量
-            // 添加数据属性以便于委托处理
-            listItem.dataset.fkey = fileName;
-            listItem.dataset.pwd = item.pwd || '';
 
             // 添加到文档片段
             fragment.appendChild(listItem);
@@ -1045,12 +1061,12 @@ class QBinHome {
 
         // 预先创建模板元素，减少DOM操作
         const template = document.createElement('template');
-        const btnIcon = isMobile() ? '<span style="font-size: 20px; font-weight: bold;">…</span>': '<span style="font-size: 8px; letter-spacing: 1px;">●●●</span>';
+        const btnIcon = isMobile() ? '<span style="font-size: 20px; font-weight: bold;">…</span>' : '<span style="font-size: 8px; letter-spacing: 1px;">●●●</span>';
 
         // 渲染当前批次的项目
         for (let i = startIndex; i < endIndex; i++) {
             const item = items[i];
-            const fileName = item.fkey;
+            const fileName = this.getItemDisplayName(item);
             const fileIcon = this.getFileTypeIcon(item.mime, 32);
 
             // 使用模板字符串创建元素
@@ -1067,11 +1083,6 @@ class QBinHome {
 
             // 获取创建的元素
             const gridItem = template.content.firstElementChild.cloneNode(true);
-
-            // 使用事件委托减少事件监听器数量
-            // 添加数据属性以便于委托处理
-            gridItem.dataset.fkey = fileName;
-            gridItem.dataset.pwd = item.pwd || '';
 
             // 添加到文档片段
             fragment.appendChild(gridItem);
@@ -1096,14 +1107,14 @@ class QBinHome {
         }
     }
 
-    getFileTypeIcon(mimeType, size=16) {
+    getFileTypeIcon(mimeType, size = 16) {
         if (!mimeType) {
             return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
         }
 
         // 文本类型
         if (mimeType.startsWith('text/')) {
-            if (['/html', '/javascript', '/css',  'text/x-'].some(prefix => mimeType.includes(prefix))) {
+            if (['/html', '/javascript', '/css', 'text/x-'].some(prefix => mimeType.includes(prefix))) {
                 return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 16 16"><path fill="currentColor" d="M2.414 8.036L4.89 10.51a.5.5 0 0 1-.707.708L1.354 8.389a.5.5 0 0 1 0-.707l2.828-2.828a.5.5 0 1 1 .707.707zm8.768 2.474l2.475-2.474l-2.475-2.475a.5.5 0 0 1 .707-.707l2.829 2.828a.5.5 0 0 1 0 .707l-2.829 2.829a.5.5 0 1 1-.707-.708M8.559 2.506a.5.5 0 0 1 .981.19L7.441 13.494a.5.5 0 0 1-.981-.19z"/></svg>`
             }
             if (mimeType.includes("markdown")) {
@@ -1246,7 +1257,8 @@ class QBinHome {
                     }, 300);
 
                     document.cookie = `qbin-editor=${selectedEditor}; path=/; max-age=31536000; SameSite=Lax`;
-                    storage.setCache('qbin-editor', selectedEditor, -1).catch(error => {});
+                    storage.setCache('qbin-editor', selectedEditor, -1).catch(error => {
+                    });
                     // 更新视觉反馈
                     this.updateEditorRadioVisualFeedback(selectedEditor);
                     // 显示成功提示
@@ -1374,7 +1386,7 @@ class QBinHome {
             tokenInput.placeholder = "点击生成API Token";
             tokenInput.style.cursor = "pointer";
             tokenInput.classList.add("token-interactive");
-            
+
             // Add click handler for the input field
             tokenInput.addEventListener('click', async () => {
                 if (tokenInput.value.trim() === '') {
@@ -1383,7 +1395,7 @@ class QBinHome {
                         tokenInput.disabled = true;
                         tokenInput.classList.add('loading');
                         tokenInput.placeholder = "正在生成 Token...";
-                        
+
                         const response = await fetch('/api/user/token', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
@@ -1631,9 +1643,9 @@ class QBinHome {
         const avatarElement = document.querySelector('.sidebar-footer .user-avatar img');
         if (avatarElement && userData.avatar) {
             avatarElement.src = userData.avatar;
-            avatarElement.onerror = function() {
+            avatarElement.onerror = function () {
                 this.src = getStyleFromHash(userData.name || "Anonymous User");
-                this.onerror = function() {
+                this.onerror = function () {
                     this.onerror = null; // 防止无限循环
                 };
             };
@@ -1642,6 +1654,106 @@ class QBinHome {
         emailElement.className = 'user-email';
         emailElement.textContent = userData.email || '';
         document.querySelector('.sidebar-footer .user-info').appendChild(emailElement);
+    }
+
+    // 显示文件详情
+    showFileDetails(item) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'modal-container';
+        
+        // 格式化日期
+        const createTime = this.formatDate(item.time);
+        const expireTime = (item.expire-item.time) < 999999999 ? this.formatDate(item.expire) : '永不过期';
+        
+        // 获取文件类型图标
+        const fileIcon = this.getFileTypeIcon(item.mime, 64);
+        
+        // 获取文件标题
+        const fileTitle = decodeURIComponent(item.title) || item.fkey;
+        
+        // 准备左侧详情字段
+        const leftDetails = [
+            { label: '访问路径', value: item.fkey },
+            { label: '访问密码', value: item.pwd ? '已设置' : '无' },
+            { label: '类型', value: item.mime.split("; ")[0] || '未知' }
+        ];
+        
+        // 准备右侧详情字段
+        const rightDetails = [
+            { label: '大小', value: formatSize(item.len) },
+            { label: '创建时间', value: createTime },
+            { label: '过期时间', value: expireTime }
+        ];
+        
+        // 构建模态框内容
+        modal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="modal-content file-details-modal">
+                <button class="modal-close-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M5 12H19"><animate fill="freeze" attributeName="d" dur="0.12s" values="M5 12H19;M12 12H12"/><set fill="freeze" attributeName="opacity" begin="0.12s" to="0"/></path><path d="M5 5L19 5M5 19L19 19" opacity="0"><animate fill="freeze" attributeName="d" begin="0.06s" dur="0.12s" values="M5 5L19 5M5 19L19 19;M5 5L19 19M5 19L19 5"/><set fill="freeze" attributeName="opacity" begin="0.06s" to="1"/></path></g></svg>
+                </button>
+                <div class="file-details-header">
+                    <div class="file-icon-container">
+                        ${fileIcon}
+                    </div>
+                    <h3 class="file-title">${fileTitle}</h3>
+                </div>
+                <div class="file-details-content">
+                    <div class="details-column">
+                        ${leftDetails.map(detail => 
+                            `<div class="detail-item">
+                                <span class="detail-label">${detail.label}:</span>
+                                <span class="detail-value">${detail.value}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                    <div class="details-column">
+                        ${rightDetails.map(detail => 
+                            `<div class="detail-item">
+                                <span class="detail-label">${detail.label}:</span>
+                                <span class="detail-value">${detail.value}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        // Add to body
+        document.body.appendChild(modal);
+        
+        // 防止滚动
+        document.body.style.overflow = 'hidden';
+        
+        // 添加模态框动画
+        setTimeout(() => {
+            modal.classList.add('visible');
+        }, 10);
+        
+        // Make sure close button is extra visible on mobile
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        
+        // 关闭按钮事件
+        const closeModal = () => {
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+            }, 300);
+        };
+        
+        // 关闭按钮事件监听
+        closeBtn.addEventListener('click', closeModal);
+        modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+        
+        // ESC键关闭
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
     }
 }
 

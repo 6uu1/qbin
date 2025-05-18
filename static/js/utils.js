@@ -1,4 +1,5 @@
 const getTimestamp = () => Math.floor(Date.now() / 1000);
+
 function cyrb53(str, seed = 0) {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {
@@ -12,6 +13,7 @@ function cyrb53(str, seed = 0) {
     h2 ^= h1 >>> 16;
     return 2097152 * (h2 >>> 0) + (h1 >>> 11);
 }
+
 function parsePath(pathname) {
     const parts = pathname.split('/').filter(Boolean);
     let result = {key: '', pwd: '', render: ''};
@@ -29,17 +31,19 @@ function parsePath(pathname) {
     }
     return result;
 }
+
 function getCookie(name) {
-  const cookieArr = document.cookie.split(';');
-  for (let i = 0; i < cookieArr.length; i++) {
-    const cookiePair = cookieArr[i].split('=');
-    const cookieName = cookiePair[0].trim();
-    if (cookieName === name) {
-      return decodeURIComponent(cookiePair[1]);
+    const cookieArr = document.cookie.split(';');
+    for (let i = 0; i < cookieArr.length; i++) {
+        const cookiePair = cookieArr[i].split('=');
+        const cookieName = cookiePair[0].trim();
+        if (cookieName === name) {
+            return decodeURIComponent(cookiePair[1]);
+        }
     }
-  }
-  return null;
+    return null;
 }
+
 function formatSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -47,48 +51,69 @@ function formatSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
 /**
  * 移动设备检测函数
  * @returns {boolean} true: 移动设备，false: 桌面设备
  */
 function isMobile() {
-  if (typeof isMobile.cached === 'boolean') return isMobile.cached;
-  if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
-    return (isMobile.cached = navigator.userAgentData.mobile);
-  }
-  const ua = navigator.userAgent || '';
-  if (/iPhone|Android.*Mobile|Mobile.*Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-    return (isMobile.cached = true);
-  }
-  if (/iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua))) {
-    return (isMobile.cached = true);
-  }
-  if (/Tablet|Android(?!.*Mobile)|Silk/i.test(ua)) {
-    return (isMobile.cached = true);
-  }
-  if (window.matchMedia && window.matchMedia('(pointer: coarse) and (hover: none)').matches) {
-    return (isMobile.cached = true);
-  }
-  return (isMobile.cached = false);
+    if (typeof isMobile.cached === 'boolean') return isMobile.cached;
+    if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+        return (isMobile.cached = navigator.userAgentData.mobile);
+    }
+    const ua = navigator.userAgent || '';
+    if (/iPhone|Android.*Mobile|Mobile.*Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+        return (isMobile.cached = true);
+    }
+    if (/iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua))) {
+        return (isMobile.cached = true);
+    }
+    if (/Tablet|Android(?!.*Mobile)|Silk/i.test(ua)) {
+        return (isMobile.cached = true);
+    }
+    if (window.matchMedia && window.matchMedia('(pointer: coarse) and (hover: none)').matches) {
+        return (isMobile.cached = true);
+    }
+    return (isMobile.cached = false);
 }
+
 class StorageManager {
-    constructor(dbName = 'qbin', version = 2) {
+    /**
+     * @param {Object}  opts
+     * @param {string}  opts.dbName     – database name
+     * @param {number}  opts.version    – schema version
+     * @param {string}  opts.storeName  – object‑store name
+     */
+    constructor(opts = {}) {
+        const {
+            dbName = 'qbin',
+            version = 2,
+            storeName = 'qbin',
+        } = opts;
+
         this.dbName = dbName;
         this.version = version;
-        this.storeName = 'qbin';
-        this.db = null;
+        this.storeName = storeName;
+
+        this.db = null;   // IDBDatabase instance (once open)
+        this._initPromise = null;  // cached initialization Promise
+
+        // lazily resolved vendor‑prefixed IndexedDB
         this.indexedDB = this._getIndexedDB();
     }
 
     // 获取 IndexedDB 实例
     _getIndexedDB() {
-        const indexedDB = window.indexedDB || window.mozIndexedDB ||
+        const idb = window.indexedDB || window.mozIndexedDB ||
             window.webkitIndexedDB || window.msIndexedDB;
-
-        if (!indexedDB) {
+        if (!idb) {
             throw new Error('当前浏览器不支持 IndexedDB');
         }
-        return indexedDB;
+        return idb;
+    }
+
+    _sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
     }
 
     // 统一的错误处理
@@ -102,151 +127,105 @@ class StorageManager {
         if (!this.db) {
             throw new Error('数据库未初始化');
         }
-        try {
-            return this.db.transaction([this.storeName], mode);
-        } catch (error) {
-            this._handleError(error);
-        }
+        return this.db.transaction([this.storeName], mode);
+    }
+
+    _logError(err) {
+        // 单一出口，统一打印；调用方负责 try/catch
+        console.error('[IndexedDB]', err);
     }
 
     // 初始化数据库连接
     async initialize() {
-        if (this.db) return;
+        if (this.db) return this.db;          // 已初始化
+        if (this._initPromise) return this._initPromise; // 正在初始化
 
-        try {
-            return new Promise((resolve, reject) => {
-                const request = this.indexedDB.open(this.dbName, this.version);
+        this._initPromise = new Promise((resolve, reject) => {
+            const request = this.indexedDB.open(this.dbName, this.version);
 
-                request.onerror = () => {
-                    this._handleError(request.error);
-                    reject(request.error);
+            request.onerror = () => {
+                this._logError(request.error);
+                reject(request.error);
+            };
+
+            request.onupgradeneeded = evt => {
+                const db = evt.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, {
+                        keyPath: 'key',
+                    });
+                    store.createIndex('timestamp', 'timestamp', {unique: false});
+                }
+            };
+
+            request.onblocked = () => {
+                const err = new Error('数据库被阻塞，可能存在其他连接');
+                this._logError(err);
+                reject(err);
+            };
+
+            request.onsuccess = () => {
+                this.db = request.result;
+
+                // graceful handle for later upgrades triggered elsewhere
+                this.db.onversionchange = () => {
+                    console.warn('Detected newer version, closing current connection...');
+                    this.db.close();
+                    this.db = null;
                 };
 
-                request.onblocked = () => {
-                    const error = new Error('数据库被阻塞，可能存在其他连接');
-                    this._handleError(error);
-                    reject(error);
-                };
+                resolve(this.db);
+            };
+        });
 
-                request.onsuccess = () => {
-                    this.db = request.result;
-
-                    this.db.onerror = (event) => {
-                        this._handleError(event.target.error);
-                    };
-
-                    resolve();
-                };
-
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(this.storeName)) {
-                        const store = db.createObjectStore(this.storeName, {
-                            keyPath: 'key'
-                        });
-                        store.createIndex('timestamp', 'timestamp', {unique: false});
-                    }
-                };
-            });
-        } catch (error) {
-            this._handleError(error);
-        }
+        return this._initPromise;
     }
 
     // 设置缓存
-    async setCache(key, value, expirationTime = 86400 * 7, maxRetries = 3) {
+    async setCache(key, value, ttl = 60 * 60 * 24 * 7, maxRetries = 3) {
         let retries = 0;
         while (retries < maxRetries) {
             try {
-                await this.initialize();
-                return new Promise((resolve, reject) => {
-                    const transaction = this._getTransaction('readwrite');
-                    const store = transaction.objectStore(this.storeName);
+                const db = await this.initialize();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction([this.storeName], 'readwrite');
+                    const store = tx.objectStore(this.storeName);
+                    const data = {key, value, timestamp: getTimestamp(), expire: ttl};
+                    store.put(data);
 
-                    const data = {
-                        key,
-                        value,
-                        timestamp: getTimestamp(),
-                        exipre: expirationTime
-                    };
-
-                    const request = store.put(data);
-
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = () => resolve(true);
-
-                    // 添加事务完成的监听
-                    transaction.oncomplete = () => resolve(true);
-                    transaction.onerror = () => reject(transaction.error);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                    tx.onabort = () => reject(tx.error);
                 });
-            } catch (error) {
-                retries++;
-                if (retries === maxRetries) {
-                    this._handleError(error);
-                }
-                // 等待后重试
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (err) {
+                this._logError(err);
+                if (++retries >= maxRetries) throw err;
+                await this._sleep(1_000);
             }
         }
     }
 
     // 获取缓存
     async getCache(key) {
-        try {
-            await this.initialize();
-            return new Promise((resolve, reject) => {
-                const transaction = this._getTransaction('readonly');
-                const store = transaction.objectStore(this.storeName);
-                const request = store.get(key);
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => {
-                    resolve(request.result ? request.result.value : null);
-                };
-            });
-        } catch (error) {
-            this._handleError(error);
-        }
+        const db = await this.initialize();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction([this.storeName], 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result ? req.result.value : null);
+            req.onerror = () => reject(req.error);
+        });
     }
 
-    async removeCache(key, options = {silent: false}) {
-        try {
-            await this.initialize();
-
-            // 首先检查键是否存在
-            const exists = await this.getCache(key);
-            if (!exists && !options.silent) {
-                console.log(`Cache key '${key}' not found`)
-                return ;
-            }
-
-            return new Promise((resolve, reject) => {
-                const transaction = this._getTransaction('readwrite');
-                const store = transaction.objectStore(this.storeName);
-
-                const request = store.delete(key);
-
-                request.onerror = () => {
-                    reject(request.error);
-                };
-
-                transaction.oncomplete = () => {
-                    resolve(true);
-                };
-
-                transaction.onerror = (event) => {
-                    reject(new Error(`Failed to remove cache: ${event.target.error}`));
-                };
-
-                transaction.onabort = (event) => {
-                    reject(new Error(`Transaction aborted: ${event.target.error}`));
-                };
-            });
-        } catch (error) {
-            if (!options.silent) {
-                this._handleError(error);
-            }
-            return false;
-        }
+    async removeCache(key) {
+        const db = await this.initialize();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction([this.storeName], 'readwrite');
+            tx.objectStore(this.storeName).delete(key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+        });
     }
 
     async removeCacheMultiple(keys, options = {continueOnError: true}) {
@@ -275,146 +254,102 @@ class StorageManager {
         }
     }
 
-    async getAllCacheKeys(options = {
-        sorted: false,
-        filter: null,
-        limit: null,
-        offset: 0
-    }) {
-        try {
-            await this.initialize();
+    async getAllCacheKeys({
+                              sorted = false,
+                              filter = null,
+                              limit = null,
+                              offset = 0,
+                          } = {}) {
+        const db = await this.initialize();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction([this.storeName], 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.getAll();
 
-            return new Promise((resolve, reject) => {
-                const transaction = this._getTransaction('readonly');
-                const store = transaction.objectStore(this.storeName);
-                const request = store.getAll();
+            req.onerror = () => reject(req.error);
+            req.onsuccess = () => {
+                let arr = req.result.map(({key, timestamp}) => ({key, timestamp}));
 
-                request.onerror = () => reject(request.error);
+                if (typeof filter === 'function') arr = arr.filter(filter);
+                if (sorted) arr.sort((a, b) => b.timestamp - a.timestamp);
+                if (offset || limit !== null) arr = arr.slice(offset, limit ? offset + limit : undefined);
 
-                request.onsuccess = () => {
-                    let results = request.result.map(item => ({
-                        key: item.key,
-                        timestamp: item.timestamp
-                    }));
-
-                    // 应用过滤器
-                    if (options.filter && typeof options.filter === 'function') {
-                        results = results.filter(options.filter);
-                    }
-
-                    // 排序
-                    if (options.sorted) {
-                        results.sort((a, b) => b.timestamp - a.timestamp);
-                    }
-
-                    // 应用分页
-                    if (options.offset || options.limit) {
-                        const start = options.offset || 0;
-                        const end = options.limit ? start + options.limit : undefined;
-                        results = results.slice(start, end);
-                    }
-
-                    resolve(results.map(item => item.key));
-                };
-
-                transaction.onerror = (event) => {
-                    reject(new Error(`Failed to get cache keys: ${event.target.error}`));
-                };
-            });
-        } catch (error) {
-            this._handleError(error);
-        }
+                resolve(arr.map(({key}) => key));
+            };
+        });
     }
+
 
     // 获取缓存统计信息
     async getCacheStats() {
-        try {
-            await this.initialize();
+        const db = await this.initialize();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction([this.storeName], 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const [countReq, allReq] = [store.count(), store.getAll()];
 
-            return new Promise((resolve, reject) => {
-                const transaction = this._getTransaction('readonly');
-                const store = transaction.objectStore(this.storeName);
-                const countRequest = store.count();
-                const sizeRequest = store.getAll();
+            let count = 0;
+            countReq.onsuccess = () => {
+                count = countReq.result;
+            };
 
-                let count = 0;
-                let totalSize = 0;
-                let oldestTimestamp = getTimestamp();
-                let newestTimestamp = 0;
+            allReq.onerror = () => reject(allReq.error);
+            allReq.onsuccess = () => {
+                const items = allReq.result;
+                const totalSize = new Blob([JSON.stringify(items)]).size;
+                const timestamps = items.map(i => i.timestamp);
 
-                countRequest.onsuccess = () => {
-                    count = countRequest.result;
-                };
-
-                sizeRequest.onsuccess = () => {
-                    const items = sizeRequest.result;
-                    totalSize = new Blob([JSON.stringify(items)]).size;
-
-                    items.forEach(item => {
-                        oldestTimestamp = Math.min(oldestTimestamp, item.timestamp);
-                        newestTimestamp = Math.max(newestTimestamp, item.timestamp);
-                    });
-
-                    resolve({
-                        count,
-                        totalSize,
-                        oldestTimestamp: count > 0 ? oldestTimestamp : null,
-                        newestTimestamp: count > 0 ? newestTimestamp : null,
-                        averageSize: count > 0 ? Math.round(totalSize / count) : 0
-                    });
-                };
-
-                transaction.onerror = (event) => {
-                    reject(new Error(`Failed to get cache stats: ${event.target.error}`));
-                };
-            });
-        } catch (error) {
-            this._handleError(error);
-        }
+                resolve({
+                    count,
+                    totalSize,
+                    oldestTimestamp: count ? Math.min(...timestamps) : null,
+                    newestTimestamp: count ? Math.max(...timestamps) : null,
+                    averageSize: count ? Math.round(totalSize / count) : 0,
+                });
+            };
+        });
     }
 
     // 清除过期缓存，添加批量处理机制
     async clearExpiredCache(batchSize = 100) {
-        try {
-            await this.initialize();
-            const now = getTimestamp();
+        const db = await this.initialize();
+        const now = getTimestamp();
 
-            return new Promise((resolve, reject) => {
-                const transaction = this._getTransaction('readwrite');
-                const store = transaction.objectStore(this.storeName);
-                const index = store.index('timestamp');
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction([this.storeName], 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            const index = store.index('timestamp');
 
-                let processed = 0;
-                const processNextBatch = () => {
-                    const request = index.openCursor();
-                    let count = 0;
+            let processed = 0;
 
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = (event) => {
-                        const cursor = event.target.result;
-                        if (cursor && count < batchSize) {
-                            if (now - cursor.value.timestamp > cursor.value.exipre) {
-                                cursor.delete();
-                                processed++;
-                            }
-                            count++;
-                            cursor.continue();
-                        } else if (count === batchSize) {
-                            // 还有更多数据要处理
-                            setTimeout(processNextBatch, 0);
-                        } else {
-                            resolve(processed);
+            const walk = () => {
+                let count = 0;
+                const req = index.openCursor();
+
+                req.onerror = () => reject(req.error);
+                req.onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor && count < batchSize) {
+                        const {timestamp, expire} = cursor.value;
+                        if (now - timestamp > expire) {
+                            cursor.delete();
+                            processed++;
                         }
-                    };
+                        count++;
+                        cursor.continue();
+                    } else if (cursor) {
+                        // pause & yield control back to event‑loop
+                        setTimeout(walk, 0);
+                    } else {
+                        resolve(processed);
+                    }
                 };
-
-                processNextBatch();
-            });
-        } catch (error) {
-            this._handleError(error);
-        }
+            };
+            walk();
+        });
     }
 }
+
 const storage = new StorageManager();
 const API = {
     generateKey(length = 10) {
@@ -443,18 +378,28 @@ const API = {
                 throw new Error('不支持的文件类型');
             }
 
+            // 从Content-Disposition头中提取标题
+            let title = '';
+            const contentDisposition = response.headers.get('Content-Disposition');
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+                if (filenameMatch && filenameMatch[1]) {
+                    title = decodeURIComponent(filenameMatch[1]);
+                }
+            }
+
             return {
                 status: response.status,
                 content: await response.text(),
-                contentType
+                contentType,
+                title
             };
         } catch (error) {
-            console.error('获取数据失败:', error);
             throw error;
         }
     },
 
-    async uploadContent(content, key, pwd = '', mimetype = 'application/octet-stream') {
+    async uploadContent(content, key, pwd = '', mimetype = 'application/octet-stream', title = '') {
         const select = document.querySelector('.expiry-select');
         try {
             const method = mimetype.includes("text/") ? 'POST' : 'PUT';
@@ -462,6 +407,11 @@ const API = {
                 "x-expire": select.options[select.selectedIndex].value,
                 "Content-Type": mimetype,
             };
+
+            // Add title header if provided
+            if (title) {
+                headers["x-title"] = encodeURIComponent(title);
+            }
 
             const response = await this.fetchNet(`/save/${key}/${pwd}`, {
                 method,
@@ -523,102 +473,102 @@ const API = {
     },
 };
 const ClipboardUtil = {
-  copyToClipboard(text, options = {}) {
-    const { onSuccess, onError, onFallback } = options;
+    copyToClipboard(text, options = {}) {
+        const {onSuccess, onError, onFallback} = options;
 
-    return new Promise((resolve, reject) => {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text)
-          .then(() => {
-            if (typeof onSuccess === 'function') onSuccess(text);
-            resolve({ success: true, method: 'clipboardAPI', text });
-          })
-          .catch((error) => {
-            console.warn('Clipboard API失败，使用备用方法', error);
-            this._fallbackCopyToClipboard(text, { onSuccess, onError, onFallback })
-              .then(resolve)
-              .catch(reject);
-          });
-      } else {
-        // 对于不支持Clipboard API的设备或非安全上下文，使用备用方法
-        console.info("使用备用复制方案");
-        this._fallbackCopyToClipboard(text, { onSuccess, onError, onFallback })
-          .then(resolve)
-          .catch(reject);
-      }
-    });
-  },
+        return new Promise((resolve, reject) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        if (typeof onSuccess === 'function') onSuccess(text);
+                        resolve({success: true, method: 'clipboardAPI', text});
+                    })
+                    .catch((error) => {
+                        console.warn('Clipboard API失败，使用备用方法', error);
+                        this._fallbackCopyToClipboard(text, {onSuccess, onError, onFallback})
+                            .then(resolve)
+                            .catch(reject);
+                    });
+            } else {
+                // 对于不支持Clipboard API的设备或非安全上下文，使用备用方法
+                console.info("使用备用复制方案");
+                this._fallbackCopyToClipboard(text, {onSuccess, onError, onFallback})
+                    .then(resolve)
+                    .catch(reject);
+            }
+        });
+    },
 
-  _fallbackCopyToClipboard(text, { onSuccess, onError, onFallback }) {
-    return new Promise((resolve, reject) => {
-      try {
-        const textArea = document.createElement('textarea');
+    _fallbackCopyToClipboard(text, {onSuccess, onError, onFallback}) {
+        return new Promise((resolve, reject) => {
+            try {
+                const textArea = document.createElement('textarea');
 
-        // 设置文本区域的样式，使其不可见
-        textArea.style.position = 'fixed';
-        textArea.style.top = '0';
-        textArea.style.left = '0';
-        textArea.style.width = '2em';
-        textArea.style.height = '2em';
-        textArea.style.padding = '0';
-        textArea.style.border = 'none';
-        textArea.style.outline = 'none';
-        textArea.style.boxShadow = 'none';
-        textArea.style.background = 'transparent';
-        textArea.style.opacity = '0';
-        textArea.style.zIndex = '-1';
+                // 设置文本区域的样式，使其不可见
+                textArea.style.position = 'fixed';
+                textArea.style.top = '0';
+                textArea.style.left = '0';
+                textArea.style.width = '2em';
+                textArea.style.height = '2em';
+                textArea.style.padding = '0';
+                textArea.style.border = 'none';
+                textArea.style.outline = 'none';
+                textArea.style.boxShadow = 'none';
+                textArea.style.background = 'transparent';
+                textArea.style.opacity = '0';
+                textArea.style.zIndex = '-1';
 
-        // 设置文本内容
-        textArea.value = text;
+                // 设置文本内容
+                textArea.value = text;
 
-        // 将文本区域添加到DOM
-        document.body.appendChild(textArea);
+                // 将文本区域添加到DOM
+                document.body.appendChild(textArea);
 
-        // 选择文本
-        textArea.focus();
-        textArea.select();
-        textArea.setSelectionRange(0, 99999); // 适用于移动设备
+                // 选择文本
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, 99999); // 适用于移动设备
 
-        // 尝试执行复制命令
-        const successful = document.execCommand('copy');
+                // 尝试执行复制命令
+                const successful = document.execCommand('copy');
 
-        // 移除临时文本区域
-        document.body.removeChild(textArea);
+                // 移除临时文本区域
+                document.body.removeChild(textArea);
 
-        // 根据复制操作的结果处理回调
-        if (successful) {
-          if (typeof onSuccess === 'function') onSuccess(text);
-          resolve({ success: true, method: 'execCommand', text });
-        } else {
-          const error = new Error('execCommand复制失败');
-          if (typeof onFallback === 'function') onFallback(text);
-          if (typeof onError === 'function') onError(error, text);
-          resolve({ success: false, method: 'execCommand', error, text });
-        }
-      } catch (error) {
-        console.error('复制到剪贴板失败:', error);
-        if (typeof onFallback === 'function') onFallback(text);
-        if (typeof onError === 'function') onError(error, text);
-        reject({ success: false, error, text });
-      }
-    });
-  },
+                // 根据复制操作的结果处理回调
+                if (successful) {
+                    if (typeof onSuccess === 'function') onSuccess(text);
+                    resolve({success: true, method: 'execCommand', text});
+                } else {
+                    const error = new Error('execCommand复制失败');
+                    if (typeof onFallback === 'function') onFallback(text);
+                    if (typeof onError === 'function') onError(error, text);
+                    resolve({success: false, method: 'execCommand', error, text});
+                }
+            } catch (error) {
+                console.error('复制到剪贴板失败:', error);
+                if (typeof onFallback === 'function') onFallback(text);
+                if (typeof onError === 'function') onError(error, text);
+                reject({success: false, error, text});
+            }
+        });
+    },
 
-  createManualCopyUI(text, options = {}) {
-    const config = {
-      title: '手动复制',
-      message: '自动复制失败，请手动复制以下内容:',
-      copyButtonText: '复制',
-      closeButtonText: '关闭',
-      ...options
-    };
+    createManualCopyUI(text, options = {}) {
+        const config = {
+            title: '手动复制',
+            message: '自动复制失败，请手动复制以下内容:',
+            copyButtonText: '复制',
+            closeButtonText: '关闭',
+            ...options
+        };
 
-    const uniqueId = 'clipboard-copy-input-' + Date.now();
+        const uniqueId = 'clipboard-copy-input-' + Date.now();
 
-    // 创建模态框元素
-    const modal = document.createElement('div');
-    modal.className = 'clipboard-modal';
-    modal.style.cssText = `
+        // 创建模态框元素
+        const modal = document.createElement('div');
+        modal.className = 'clipboard-modal';
+        modal.style.cssText = `
       position: fixed;
       top: 0;
       left: 0;
@@ -631,7 +581,7 @@ const ClipboardUtil = {
       z-index: 9999;
     `;
 
-    modal.innerHTML = `
+        modal.innerHTML = `
       <div class="clipboard-modal-content" style="
         background: white;
         padding: 20px;
@@ -670,53 +620,53 @@ const ClipboardUtil = {
       </div>
     `;
 
-    // 添加事件监听
-    setTimeout(() => {
-      const linkInput = document.getElementById(uniqueId);
-      const copyBtn = document.getElementById(`${uniqueId}-btn`);
-      const closeBtn = modal.querySelector('.clipboard-close-btn');
+        // 添加事件监听
+        setTimeout(() => {
+            const linkInput = document.getElementById(uniqueId);
+            const copyBtn = document.getElementById(`${uniqueId}-btn`);
+            const closeBtn = modal.querySelector('.clipboard-close-btn');
 
-      if (linkInput) {
-        linkInput.focus();
-        linkInput.select();
-      }
+            if (linkInput) {
+                linkInput.focus();
+                linkInput.select();
+            }
 
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          if (linkInput) {
-            linkInput.select();
-            document.execCommand('copy');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    if (linkInput) {
+                        linkInput.select();
+                        document.execCommand('copy');
 
-            // 触发自定义事件
-            modal.dispatchEvent(new CustomEvent('manualCopy', { detail: { text } }));
-          }
-        });
-      }
+                        // 触发自定义事件
+                        modal.dispatchEvent(new CustomEvent('manualCopy', {detail: {text}}));
+                    }
+                });
+            }
 
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          if (document.body.contains(modal)) {
-            document.body.removeChild(modal);
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
 
-            // 触发自定义事件
-            modal.dispatchEvent(new CustomEvent('close'));
-          }
-        });
-      }
+                        // 触发自定义事件
+                        modal.dispatchEvent(new CustomEvent('close'));
+                    }
+                });
+            }
 
-      // 点击模态框外部关闭
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          if (document.body.contains(modal)) {
-            document.body.removeChild(modal);
+            // 点击模态框外部关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
 
-            // 触发自定义事件
-            modal.dispatchEvent(new CustomEvent('close'));
-          }
-        }
-      });
-    }, 0);
+                        // 触发自定义事件
+                        modal.dispatchEvent(new CustomEvent('close'));
+                    }
+                }
+            });
+        }, 0);
 
-    return modal;
-  }
+        return modal;
+    }
 };

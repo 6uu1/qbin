@@ -193,7 +193,7 @@
             }
         } else if (isCheckUpdate) {
             // 用户主动检查但无更新
-            alert('当前已是最新版本');
+            return '当前已是最新版本';
         }
     }
     

@@ -48,6 +48,7 @@ export async function getRaw(ctx: Context<AppState>) {
   ctx.response.headers.set("Cache-Control", "no-cache, must-revalidate");  // private , must-revalidate | , max-age=3600
   ctx.response.headers.set("Content-Type", full.mime);
   ctx.response.headers.set("Content-Length", full.len.toString());
+  if(full.title) ctx.response.headers.set("Content-Disposition", `inline; filename="${full.title}"`);
   ctx.response.body = full.content;
 }
 
@@ -67,6 +68,7 @@ export async function queryRaw(ctx: Context<AppState>) {
   ctx.response.status = 200;
   ctx.response.headers.set("Content-Type", meta.mime);
   ctx.response.headers.set("Content-Length", meta.len.toString());
+  if(full.title) ctx.response.headers.set("Content-Disposition", `inline; filename="${full.title}"`);
 }
 
 /** POST/PUT /save/:key/:pwd? 统一入口：若 key 已存在则更新，否则创建 */
@@ -125,6 +127,7 @@ async function createNew(
     .check({ key: [PASTE_STORE, key], versionstamp: null })
     .set([PASTE_STORE, key], {
       email: metadata.email,
+      title: metadata.title,
       name: metadata.uname,
       ip: metadata.ip,
       len: metadata.len,
@@ -178,6 +181,7 @@ async function updateExisting(
 
   await kv.set([PASTE_STORE, key], {
       email: metadata.email,
+      title: metadata.title,
       name: metadata.uname,
       ip: metadata.ip,
       len: metadata.len,
@@ -195,6 +199,7 @@ async function updateExisting(
         await updateCache(key, oldMeta);
         await kv.set([PASTE_STORE, key], {
           email: oldMeta.email,
+          title: oldMeta.title,
           name: oldMeta.uname,
           ip: oldMeta.ip,
           len: oldMeta.len,
@@ -211,6 +216,7 @@ async function updateExisting(
       await updateCache(key, oldMeta); // 回滚
       await kv.set([PASTE_STORE, key], {
           email: oldMeta.email,
+          title: oldMeta.title,
           name: oldMeta.uname,
           ip: oldMeta.ip,
           len: oldMeta.len,
@@ -236,6 +242,8 @@ async function assembleMetadata(
 ): Promise<Metadata> {
   const req = ctx.request;
   const headers = req.headers;
+  // const title = decodeURIComponent(headers.get("x-title") || "");
+  const title = headers.get("x-title") || "";
   const len = +headers.get("Content-Length")!;
   if (len > MAX_UPLOAD_FILE_SIZE) {
     throw new Response(ctx, 413, ResponseMessages.CONTENT_TOO_LARGE);
@@ -254,6 +262,7 @@ async function assembleMetadata(
   const clientIp = headers.get("cf-connecting-ip") || req.ip;
   return {
     fkey: key,
+    title: title,
     time: getTimestamp(),
     expire: getTimestamp() +
       ~~(headers.get("x-expire") ?? "315360000"),

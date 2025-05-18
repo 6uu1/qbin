@@ -9,7 +9,7 @@ export const MAX_UPLOAD_FILE_SIZE = parseInt(get_env("MAX_UPLOAD_FILE_SIZE", "52
 export const MAX_CACHE_SIZE = 1048576;    // 单数据缓存上限
 export const ENABLE_ANONYMOUS_ACCESS = parseInt(get_env("ENABLE_ANONYMOUS_ACCESS", "1"));   // 匿名访问
 
-export const PASTE_STORE = "qbinv2";     // KV 命名空间
+export const PASTE_STORE = "qbinv3";     // KV 命名空间
 export const DENO_KV_ACCESS_TOKEN = get_env("DENO_KV_ACCESS_TOKEN"); // Deno KV 访问令牌
 export const DENO_KV_PROJECT_ID = get_env("DENO_KV_PROJECT_ID"); // Deno KV 项目 ID
 export const CACHE_CHANNEL = "qbin-cache-sync";

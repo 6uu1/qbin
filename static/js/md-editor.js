@@ -610,17 +610,16 @@ class QBinMDEditor extends QBinEditorBase {
     }
 
     initializeEncryptCheckbox() {
-        const checkbox = document.getElementById('encrypt-checkbox');
-        const hiddenCheckbox = document.getElementById('encryptData');
-        const optionToggle = document.querySelector('.option-toggle');
-
-        if (optionToggle && checkbox && hiddenCheckbox) {
-            optionToggle.addEventListener('click', () => {
-                const isChecked = checkbox.classList.contains('checked');
-                checkbox.classList.toggle('checked');
-                hiddenCheckbox.checked = !isChecked;
-            });
-        }
+        // const checkbox = document.getElementById('encrypt-checkbox');
+        // const hiddenCheckbox = document.getElementById('encryptData');
+        // const optionToggle = document.querySelector('.option-toggle');
+        // if (optionToggle && checkbox && hiddenCheckbox) {
+        //     optionToggle.addEventListener('click', () => {
+        //         const isChecked = checkbox.classList.contains('checked');
+        //         checkbox.classList.toggle('checked');
+        //         hiddenCheckbox.checked = !isChecked;
+        //     });
+        // }
     }
 
     togglePasswordPanel(isClick = false) {

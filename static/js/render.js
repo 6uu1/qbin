@@ -11,6 +11,7 @@ class QBinViewer {
         this.scrollThreshold = 20;
         this.ticking = false;
         this.edit = 'e';
+        this.title = '';
         this.currentTheme = this.getThemePreference();
         this.init();
         this.initScrollHandler();
@@ -246,6 +247,16 @@ class QBinViewer {
     async loadContent(headResponse) {
         const contentType = headResponse.headers.get('Content-Type');
         const contentLength = headResponse.headers.get('Content-Length');
+        const contentDisposition = headResponse.headers.get('Content-Disposition');
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+            const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+            if (filenameMatch && filenameMatch[1]) {
+                this.title = decodeURIComponent(filenameMatch[1]);
+                if(this.title){
+                    document.title = `${this.title} - QBin`;
+                }
+            }
+        }
         this.setupButtons(contentType);
 
         if (!(['text/', 'image/', 'audio/', 'video/'].some(type => contentType.startsWith(type)))) {
@@ -501,11 +512,13 @@ class QBinViewer {
             const cacheData = {
                 content,
                 timestamp: getTimestamp(),
-                path: this.currentPath.key,
-                hash: cyrb53(content)
+                key: this.currentPath.key,
+                pwd: this.currentPath.pwd,
+                title: this.title,
+                hash: cyrb53(content),
             };
             storage.setCache(this.CACHE_KEY + this.currentPath.key, cacheData);
-            sessionStorage.setItem(this.CACHE_KEY + 'last', JSON.stringify(this.currentPath));
+            sessionStorage.setItem(this.CACHE_KEY + 'last', JSON.stringify(cacheData));
         } catch (e) {
             console.error('Fork处理失败:', e);
         }

@@ -97,6 +97,7 @@ class MetadataRepository implements IMetadataRepository {
       this.db.select({
         fkey: this.t.fkey,
         email: this.t.email,
+        title: this.t.title,
         uname: this.t.uname,
         ip: this.t.ip,
         len: this.t.len,
@@ -134,6 +135,7 @@ class MetadataRepository implements IMetadataRepository {
       const items = await this.run(() =>
         this.db.select({
           fkey: this.t.fkey,
+          title: this.t.title,
           time: this.t.time,
           expire: this.t.expire,
           ip: this.t.ip,
@@ -164,6 +166,7 @@ class MetadataRepository implements IMetadataRepository {
     const items = await this.run(() =>
       this.db.select({
         fkey: this.t.fkey,
+        title: this.t.title,
         time: this.t.time,
         expire: this.t.expire,
         ip: this.t.ip,

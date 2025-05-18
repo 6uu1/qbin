@@ -4,7 +4,7 @@ import { ResponseMessages } from "../utils/messages.ts";
 import {createMetadataRepository} from "../db/repositories/metadataRepository.ts";
 import {EMAIL, QBIN_ENV} from "../config/constants.ts";
 import {purgeExpiredCacheEntries, getAllStorage, syncDBToKV} from "../controllers/admin.controller.ts";
-import {migrateToV2} from "../db/helpers/migrate.ts";
+import {migrateToV3} from "../db/helpers/migrate.ts";
 import {get_env} from "../config/env.ts";
 
 
@@ -25,7 +25,7 @@ router
     if(QBIN_ENV === "dev") return new Response(ctx, 403, ResponseMessages.DEMO_RESTRICTED);
     if (email !== EMAIL) return new Response(ctx, 403, ResponseMessages.ADMIN_REQUIRED);
     const repo = await createMetadataRepository();
-    const {rowCount} = await migrateToV2(repo, get_env("DB_CLIENT", "postgres"));
+    const {rowCount} = await migrateToV3(repo, get_env("DB_CLIENT", "postgres"));
     return new Response(ctx, 200, ResponseMessages.SUCCESS, {rowCount: rowCount});
   })
   .get("/api/cache/purge", purgeExpiredCacheEntries);   // 清理过期缓存

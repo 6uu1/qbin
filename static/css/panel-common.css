@@ -93,7 +93,7 @@
 
 /* 面板内部分组样式 - 水墨卡片效果 */
 .form-section {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     padding: 16px;
     background: var(--section-bg);
     border-radius: 12px;
@@ -117,7 +117,7 @@
 
 /* 社交链接导航改为标签样式 */
 .social-links-section {
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 /* 社交链接容器改为标签式设计 */
@@ -198,7 +198,7 @@
 /* 修改输入框容器样式 */
 .input-wrapper {
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 .input-wrapper:last-child {
@@ -229,6 +229,56 @@
     border-color: var(--input-focus-border);
     background: var(--input-focus-bg);
     box-shadow: var(--input-focus-shadow);
+}
+
+/* 标题输入框特殊样式 - 顶部美化设计 */
+.title-wrapper {
+    margin: 0 0 8px 0;
+    padding: 4px 8px 6px;
+    border-radius: 10px 10px 0 0;
+    background: var(--section-bg);
+    background: linear-gradient(to bottom, var(--section-bg), transparent);
+    border: none;
+    border-bottom: 1px solid var(--section-border);
+    transition: all 0.3s ease;
+}
+
+.title-wrapper:hover, .title-wrapper:focus-within {
+    background: var(--section-hover-bg);
+    border-bottom-color: var(--input-focus-border);
+}
+
+.title-input {
+    width: 100%;
+    border: none;
+    padding: 6px 4px;
+    font-size: 16px;
+    text-align: center;
+    transition: all 0.25s ease;
+    background: transparent;
+    color: var(--input-color);
+    box-sizing: border-box;
+}
+
+.title-input::placeholder {
+    color: var(--input-placeholder-color, rgba(120, 120, 120, 0.6));
+    font-weight: normal;
+    font-size: 15px;
+    font-style: italic;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.title-input:focus {
+    outline: none;
+}
+
+.title-input:focus::placeholder {
+    opacity: 0.4;
+}
+
+#title-input {
+    letter-spacing: 0.02em;
 }
 
 /* 添加选项按钮样式 */
@@ -611,7 +661,7 @@
     display: flex;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 10px;
     padding-top: 0;
 }
 

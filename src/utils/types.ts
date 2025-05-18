@@ -5,6 +5,8 @@
 export interface Metadata {
   /** 主键（唯一标识） */
   fkey: string;
+  /** 内容标题 */
+  title: string;
   /** 创建时间戳 */
   time: number;
   /** 过期时间戳 */
@@ -30,7 +32,8 @@ export interface Metadata {
 export interface KVMeta {
   fkey: string;
   email: string | null;
-  uname: string | null;
+  title: string | null;
+  name: string | null;
   ip: string | null;
   len: number;
   expire: number;

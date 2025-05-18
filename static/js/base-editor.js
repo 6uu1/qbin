@@ -7,11 +7,8 @@ class QBinEditorBase {
         this.isUploading = false;
         this.lastUploadedHash = '';
         this.autoUploadTimer = null;
-        this.loadContent().then();
-        if (this.currentPath.key.length < 2) {
-            const newKey = API.generateKey(6);
-            this.updateURL(newKey, this.currentPath.pwd);
-        }
+        this.STALE_THRESHOLD = 3;
+        this.title = '';
     }
 
     async initialize() {
@@ -20,6 +17,7 @@ class QBinEditorBase {
         this.initializeKeyAndPasswordSync();
         await this.initEditor();
         if (this.currentEditor === "multi") this.initializeUI();
+        await this.loadContent();
     }
 
     async initEditor() {
@@ -43,26 +41,46 @@ class QBinEditorBase {
     saveToLocalCache(force = false) {
         const content = this.getEditorContent();
         if (force || (content && cyrb53(content) !== this.lastUploadedHash)) {
+            const titleInput = document.getElementById('title-input');
+            const title = titleInput ? titleInput.value.trim() : this.title || '';
+
+            // 更新类属性
+            if (title) {
+                this.title = title;
+            }
+
             const cacheData = {
                 content,
                 timestamp: getTimestamp(),
-                path: this.currentPath.key,
-                hash: cyrb53(content)
+                key: this.currentPath.key,
+                pwd: this.currentPath.pwd,
+                title: title,
+                hash: cyrb53(content),
             };
             storage.setCache(this.CACHE_KEY + this.currentPath.key, cacheData);
         }
     }
 
-    async loadFromLocalCache(key) {
+    async loadLocalCache(cacheData) {
         try {
-            const cacheData = await storage.getCache(this.CACHE_KEY + (key || this.currentPath.key));
-            if (cacheData) {
+            if ("content" in cacheData) {
                 const currentPath = parsePath(window.location.pathname);
-                const isNewPage = currentPath.key.length < 2 || key;
-                const isSamePath = currentPath.key === cacheData.path;
+                const isNewPage = currentPath.key.length < 2 || cacheData.key;
+                const isSamePath = currentPath.key === cacheData.key;
                 if (isNewPage || isSamePath) {
                     this.setEditorContent(cacheData.content);
                     this.lastUploadedHash = cyrb53(cacheData.content);
+
+                    // Load title if available
+                    if (cacheData.title) {
+                        this.title = cacheData.title;
+                        const titleInput = document.getElementById('title-input');
+                        if (titleInput) {
+                            titleInput.value = cacheData.title;
+                            this.updateDocumentTitle(cacheData.title);
+                        }
+                    }
+
                     return [true, cacheData.timestamp];
                 }
             }
@@ -74,21 +92,53 @@ class QBinEditorBase {
     }
 
     async loadContent() {
-        const {key, pwd, render} = this.currentPath;
-        if (key.length > 1) {
-            const [isCache, last] = await this.loadFromLocalCache();
-            this.updateURL(key, pwd, "replaceState");
-            if (getTimestamp() - last > 3) {
-                await this.loadOnlineCache(key, pwd, isCache);
+        try {
+            // 解析本地来源（storage / session / 新 key）
+            const cacheData = await this.#resolveCacheSource();
+
+            // 应用本地缓存（返回 [是否命中, 时间戳]）
+            const [hasLocalCache, lastTs] = await this.loadLocalCache(cacheData);
+
+            // 同步地址栏与输入框（保持 UI 状态一致）
+            this.#syncInputsAndURL(cacheData);
+
+            // 视情况拉取远端
+            if (getTimestamp() - lastTs > this.STALE_THRESHOLD) {
+                await this.loadOnlineCache(cacheData.key, cacheData.pwd, hasLocalCache);
             }
-        } else {
-            const cacheData = JSON.parse(sessionStorage.getItem('qbin/last') || '{"key": null}');
-            if (!cacheData.key) return null;
-            await this.loadFromLocalCache(cacheData.key);
-            this.updateURL(cacheData.key, cacheData.pwd, "replaceState");
-            document.getElementById('key-input').value = cacheData.key.trim() || '';
-            document.getElementById('password-input').value = cacheData.pwd.trim() || '';
+        } catch (err) {
+            console.error('loadContent 失败:', err);
+            this.updateUploadStatus(`加载失败：${err.message || err}`, 'error');
         }
+    }
+
+    async #resolveCacheSource() {
+        const {key: pathKey, pwd: pathPwd} = this.currentPath;
+
+        // 路径中已带有效 key
+        if (pathKey && pathKey.length >= 2) {
+            const byKey = await storage.getCache(this.CACHE_KEY + pathKey);
+            if(byKey) byKey.pwd = pathPwd;
+            return byKey || {key: pathKey, pwd: pathPwd};
+        }
+
+        // Session 中有最近一次记录
+        const last = JSON.parse(sessionStorage.getItem('qbin/last') || '{}');
+        if (last.key) return last;
+
+        // 创建全新 key（首次打开或全部缓存失效）
+        const newKey = API.generateKey(6);
+        return {key: newKey, pwd: ""};
+    }
+
+    #syncInputsAndURL(cacheData) {
+        const {key, pwd} = cacheData;
+        this.updateURL(key, pwd, 'replaceState');
+
+        const keyEl = document.getElementById('key-input');
+        const pwdEl = document.getElementById('password-input');
+        if (keyEl) keyEl.value = key || '';
+        if (pwdEl) pwdEl.value = pwd || '';
     }
 
     initializeUI() {
@@ -124,7 +174,7 @@ class QBinEditorBase {
             this.isUploading = true;
             this.updateUploadStatus("数据加载中…");
             let tips = "";
-            const {status, content} = await API.getContent(key, pwd);
+            const {status, content, contentType, title} = await API.getContent(key, pwd);
 
             if (!content && status !== 200 && status !== 404) {
                 throw new Error('加载失败');
@@ -146,11 +196,21 @@ class QBinEditorBase {
                 return true;
             }
 
+            // 设置标题
+            if (title) {
+                this.title = title;
+                const titleInput = document.getElementById('title-input');
+                if (titleInput) {
+                    titleInput.value = title;
+                }
+                this.updateDocumentTitle(title);
+            }
+
             // 检查内容差异
             const needsConfirmation = isCache &&
-                                    content &&
-                                    currentContent &&
-                                    this.lastUploadedHash !== currentHash;
+                content &&
+                currentContent &&
+                this.lastUploadedHash !== currentHash;
 
             if (needsConfirmation) {
                 const result = await this.showConfirmDialog(
@@ -233,12 +293,14 @@ class QBinEditorBase {
             this.isUploading = true;
             const keyInput = document.getElementById('key-input');
             const passwordInput = document.getElementById('password-input');
+            const titleInput = document.getElementById('title-input');
             let key = this.currentPath.key || keyInput.value.trim() || API.generateKey(6);
             const action = this.currentPath.key === key ? "replaceState" : "pushState";
             const pwd = passwordInput.value.trim();
+            const title = titleInput.value ? titleInput.value.trim() : this.title;
             const chash = cyrb53(content);
 
-            const success = await API.uploadContent(content, key, pwd, mimetype);
+            const success = await API.uploadContent(content, key, pwd, mimetype, title);
             if (success) {
                 if (!isFile) {
                     this.lastUploadedHash = chash;
@@ -252,6 +314,7 @@ class QBinEditorBase {
                 }
 
                 this.updateURL(key, pwd, action);
+                this.updateDocumentTitle(title);
                 if (isFile) {
                     setTimeout(() => {
                         window.location.assign(`/p/${key}/${pwd}`);
@@ -382,8 +445,8 @@ class QBinEditorBase {
         let hideTimeout = null;
         // 设置复选框交互
         const checkbox = document.getElementById('encrypt-checkbox');
-        const hiddenCheckbox = document.getElementById('encryptData');
-        const optionToggle = document.querySelector('.option-toggle');
+        // const hiddenCheckbox = document.getElementById('encryptData');
+        // const optionToggle = document.querySelector('.option-toggle');
 
         const showPanel = () => {
             clearTimeout(hideTimeout);
@@ -503,26 +566,26 @@ class QBinEditorBase {
             }
         });
 
-        // 将点击事件从checkbox移到整个optionToggle区域
-        optionToggle.addEventListener('click', function() {
-            if (checkbox.classList.contains('checked')) {
-                checkbox.classList.remove('checked');
-                hiddenCheckbox.checked = false;
-            } else {
-                checkbox.classList.add('checked');
-                hiddenCheckbox.checked = true;
-            }
-        });
-
-        // 初始化复选框状态
-        if (hiddenCheckbox.checked) {
-            checkbox.classList.add('checked');
-        }
+        // // 将点击事件从checkbox移到整个optionToggle区域
+        // optionToggle.addEventListener('click', function () {
+        //     if (checkbox.classList.contains('checked')) {
+        //         checkbox.classList.remove('checked');
+        //         hiddenCheckbox.checked = false;
+        //     } else {
+        //         checkbox.classList.add('checked');
+        //         hiddenCheckbox.checked = true;
+        //     }
+        // });
+        // // 初始化复选框状态
+        // if (hiddenCheckbox.checked) {
+        //     checkbox.classList.add('checked');
+        // }
     }
 
     initializeKeyAndPasswordSync() {
         const keyInput = document.getElementById('key-input');
         const passwordInput = document.getElementById('password-input');
+        const titleInput = document.getElementById('title-input');
         const generateKeyBtn = document.getElementById('generate-key-btn');
         const generatePwdBtn = document.getElementById('generate-pwd-btn');
         const undoSettingsBtn = document.getElementById('undo-settings');
@@ -531,10 +594,27 @@ class QBinEditorBase {
         // Store original values for reset functionality
         let originalKey = this.currentPath.key;
         let originalPwd = this.currentPath.pwd;
+        let originalTitle = this.title || '';
 
         // 初始化输入框值
         keyInput.value = this.currentPath.key;
         passwordInput.value = this.currentPath.pwd;
+
+        // 初始化标题值并同步到浏览器标题
+        if (titleInput) {
+            // 如果已经有标题属性，直接使用
+            if (this.title) {
+                titleInput.value = this.title;
+                this.updateDocumentTitle(this.title);
+            }
+
+            titleInput.addEventListener('input', () => {
+                const newTitle = titleInput.value.trim();
+                this.title = newTitle; // 更新类属性
+                this.updateDocumentTitle(newTitle);
+                titleInput.classList.add('input-modified');
+            });
+        }
 
         // 监听输入变化，更新地址栏
         const updateURLHandler = () => {
@@ -550,32 +630,35 @@ class QBinEditorBase {
         // 添加浏览器前进后退事件监听
         window.addEventListener('popstate', () => {
             const newPath = parsePath(window.location.pathname);
-            
+
             // 使用requestAnimationFrame确保在下一帧渲染前执行
             requestAnimationFrame(() => {
                 if (newPath.key) {
                     // 更新输入框值 - 使用多种方式确保UI更新
                     keyInput.value = newPath.key;
                     passwordInput.value = newPath.pwd || '';
-                    
+
                     // 直接设置DOM属性
                     keyInput.setAttribute('value', newPath.key);
                     passwordInput.setAttribute('value', newPath.pwd || '');
-                    
+
                     // 更新当前路径对象
                     this.currentPath = newPath;
-                    
+
                     // 更新原始值以便撤销功能正常工作
                     originalKey = newPath.key;
                     originalPwd = newPath.pwd || '';
-                    
+
                     // 重置输入框修改状态
                     keyInput.classList.remove('input-modified');
                     passwordInput.classList.remove('input-modified');
-                    
+
                     // 派发输入事件以确保任何监听器都能感知到变化
-                    keyInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    keyInput.dispatchEvent(new Event('input', {bubbles: true}));
+                    passwordInput.dispatchEvent(new Event('input', {bubbles: true}));
+
+                    // 尝试加载与当前key对应的标题
+                    this.loadTitleForCurrentKey(newPath.key, titleInput);
                 }
             });
         });
@@ -607,7 +690,7 @@ class QBinEditorBase {
             const newKey = API.generateKey(6);
             keyInput.value = newKey;
             updateURLHandler();
-            
+
             // 添加动画效果
             keyInput.classList.add('highlight-input');
             addRotationAnimation(generateKeyBtn);
@@ -626,10 +709,10 @@ class QBinEditorBase {
                 const randomIndex = Math.floor(Math.random() * charset.length);
                 password += charset[randomIndex];
             }
-            
+
             passwordInput.value = password;
             updateURLHandler();
-            
+
             // 添加动画效果
             passwordInput.classList.add('highlight-input');
             addRotationAnimation(generatePwdBtn);
@@ -638,24 +721,24 @@ class QBinEditorBase {
             }, 500);
         };
 
-        // 重置设置
+        // 重置设置 - 只重置路径和密码，不重置标题
         const resetSettings = () => {
             keyInput.value = originalKey;
             passwordInput.value = originalPwd;
             updateURLHandler();
-            
-            // 添加动画效果
+
+            // 添加动画效果，仅对路径和密码输入框
             keyInput.classList.add('highlight-input');
             passwordInput.classList.add('highlight-input');
             setTimeout(() => {
                 keyInput.classList.remove('highlight-input');
                 passwordInput.classList.remove('highlight-input');
             }, 500);
-            
+
             resetInputModification(keyInput);
             resetInputModification(passwordInput);
-            
-            this.updateUploadStatus("已撤销设置", "success");
+
+            this.updateUploadStatus("已撤销访问设置", "success");
             setTimeout(() => this.updateUploadStatus(""), 2000);
         };
 
@@ -663,12 +746,18 @@ class QBinEditorBase {
         const saveContent = () => {
             const content = this.getEditorContent();
             if (content) {
+                if (titleInput) {
+                    this.title = titleInput.value.trim(); // 更新类属性
+                }
+
                 this.handleUpload(content, this.contentType);
                 this.saveToLocalCache(true);
                 originalKey = this.currentPath.key;
                 originalPwd = this.currentPath.pwd;
+                if (titleInput) originalTitle = titleInput.value.trim();
                 resetInputModification(keyInput);
                 resetInputModification(passwordInput);
+                if (titleInput) resetInputModification(titleInput);
             } else {
                 this.updateUploadStatus("无法保存空内容", "info");
                 setTimeout(() => this.updateUploadStatus(""), 2000);
@@ -679,7 +768,7 @@ class QBinEditorBase {
         if (generateKeyBtn) {
             generateKeyBtn.addEventListener('click', generateRandomKey);
         }
-        
+
         if (generatePwdBtn) {
             generatePwdBtn.addEventListener('click', generateRandomPassword);
         }
@@ -688,7 +777,7 @@ class QBinEditorBase {
         if (undoSettingsBtn) {
             undoSettingsBtn.addEventListener('click', resetSettings);
         }
-        
+
         if (applySettingsBtn) {
             applySettingsBtn.addEventListener('click', saveContent);
         }
@@ -723,7 +812,8 @@ class QBinEditorBase {
                     sessionStorage.setItem('qbin/last', JSON.stringify({
                         key: key,
                         pwd: pwd,
-                        timestamp: getTimestamp()
+                        timestamp: getTimestamp(),
+                        title: this.title
                     }));
                     window.location.href = `/p/${key}/${pwd}`;
                 }
@@ -743,13 +833,36 @@ class QBinEditorBase {
                         sessionStorage.setItem('qbin/last', JSON.stringify({
                             key: key,
                             pwd: pwd,
-                            timestamp: getTimestamp()
+                            timestamp: getTimestamp(),
+                            title: this.title
                         }));
                         window.location.href = `/${editorType}/${key}/${pwd}`;
                     }
                 });
             }
         });
+    }
+
+    // 加载当前key对应的标题
+    async loadTitleForCurrentKey(key, titleInput) {
+        if (!titleInput) return;
+
+        try {
+            // 尝试从缓存加载标题
+            const cacheData = await storage.getCache(this.CACHE_KEY + key);
+            if (cacheData && cacheData.title) {
+                this.title = cacheData.title;
+                titleInput.value = cacheData.title;
+                this.updateDocumentTitle(cacheData.title);
+            } else {
+                // 如果缓存中没有，就从类属性获取
+                titleInput.value = this.title || '';
+                this.updateDocumentTitle(this.title || '');
+            }
+            titleInput.classList.remove('input-modified');
+        } catch (error) {
+            console.error('加载标题失败:', error);
+        }
     }
 
     updateURL(key, pwd, action = "replaceState") {
@@ -770,5 +883,13 @@ class QBinEditorBase {
             return;
         }
         historyMethod.call(window.history, null, '', newPath);
+    }
+
+    updateDocumentTitle(title) {
+        // Update document title with the provided title or default to "QBin"
+        const editorType = this.currentEditor === "multi" ? "通用编辑器" :
+            this.currentEditor === "code" ? "代码编辑器" :
+                this.currentEditor === "md" ? "Markdown编辑器" : "";
+        document.title = title ? `${title} - QBin` : `QBin - ${editorType}`;
     }
 }
