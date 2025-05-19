@@ -1,5 +1,5 @@
 # ──────── build stage ─────────────────────
-FROM denoland/deno:2.3.1 AS build
+FROM denoland/deno:2.3.3 AS build
 
 ARG DB_CLIENT=sqlite
 ENV DB_CLIENT=${DB_CLIENT}

@@ -256,7 +256,7 @@ class QBinHome {
             menuView.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.selectedItem) {
-                    window.open(`/p/${this.selectedItem.fkey}/${this.selectedItem.pwd}`, '_blank', 'noopener');
+                    window.open(`/p/${this.selectedItem.fkey}/${this.selectedItem.pwd ?? ""}`, '_blank', 'noopener');
                 }
                 this.hideContextMenu();
             });
@@ -266,7 +266,7 @@ class QBinHome {
             menuCopyLink.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.selectedItem) {
-                    const url = `${window.location.origin}/r/${this.selectedItem.fkey}/${this.selectedItem.pwd || ''}`;
+                    const url = `${window.location.origin}/r/${this.selectedItem.fkey}/${this.selectedItem.pwd ?? ''}`;
 
                     ClipboardUtil.copyToClipboard(url)
                         .then(result => {
@@ -300,7 +300,7 @@ class QBinHome {
             menuDelete.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.selectedItem) {
-                    this.deleteStorageItem(this.selectedItem.fkey, this.selectedItem.pwd);
+                    this.deleteStorageItem(this.selectedItem.fkey, this.selectedItem.pwd ?? "");
                 }
                 this.hideContextMenu();
             });
@@ -440,7 +440,7 @@ class QBinHome {
 
         // 过滤匹配的文件
         const filteredItems = this.storageItems.filter(item => {
-            const title = (decodeURIComponent(item.title) || item.fkey).toLowerCase();
+            const title = (decodeURIComponent(item.title ?? "") || item.fkey).toLowerCase();
             return title.includes(searchTerm);
         });
 
@@ -563,7 +563,7 @@ class QBinHome {
                 // 如果找不到对应的文件项，尝试使用按钮上的数据创建一个临时项
                 const tempItem = {
                     fkey: fkey,
-                    pwd: pwd || ''
+                    pwd: pwd ?? ''
                 };
                 this.showContextMenu(x, y, tempItem);
             }
@@ -988,7 +988,7 @@ class QBinHome {
                     <span class="file-size">${formatSize(item.len)}</span>
                     <span class="file-time">${this.formatDate(item.time)}</span>
                     <span class="file-actions">
-                        <button class="action-btn" title="更多操作" data-fkey="${item.fkey}" data-pwd="${item.pwd}">
+                        <button class="action-btn" title="更多操作" data-fkey="${item.fkey}" data-pwd="${item.pwd ?? ""}">
                         ${btnIcon}
                         </button>
                     </span>
@@ -1072,7 +1072,7 @@ class QBinHome {
             // 使用模板字符串创建元素
             template.innerHTML = `
                 <div class="grid-item">
-                    <button class="action-btn grid-action-btn" title="更多操作" data-fkey="${item.fkey}" data-pwd="${item.pwd || ''}">
+                    <button class="action-btn grid-action-btn" title="更多操作" data-fkey="${item.fkey}" data-pwd="${item.pwd ?? ""}">
                         ${btnIcon}
                     </button>
                     <div class="file-icon">${fileIcon}</div>
@@ -1652,7 +1652,7 @@ class QBinHome {
         }
         const emailElement = document.createElement('span');
         emailElement.className = 'user-email';
-        emailElement.textContent = userData.email || '';
+        emailElement.textContent = userData.email ?? '';
         document.querySelector('.sidebar-footer .user-info').appendChild(emailElement);
     }
 
@@ -1670,7 +1670,7 @@ class QBinHome {
         const fileIcon = this.getFileTypeIcon(item.mime, 64);
         
         // 获取文件标题
-        const fileTitle = decodeURIComponent(item.title) || item.fkey;
+        const fileTitle = decodeURIComponent(item.title ?? "") || item.fkey;
         
         // 准备左侧详情字段
         const leftDetails = [

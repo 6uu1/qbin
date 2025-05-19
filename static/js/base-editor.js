@@ -42,7 +42,7 @@ class QBinEditorBase {
         const content = this.getEditorContent();
         if (force || (content && cyrb53(content) !== this.lastUploadedHash)) {
             const titleInput = document.getElementById('title-input');
-            const title = titleInput ? titleInput.value.trim() : this.title || '';
+            const title = titleInput ? titleInput.value.trim() : this.title ?? '';
 
             // 更新类属性
             if (title) {
@@ -594,7 +594,7 @@ class QBinEditorBase {
         // Store original values for reset functionality
         let originalKey = this.currentPath.key;
         let originalPwd = this.currentPath.pwd;
-        let originalTitle = this.title || '';
+        let originalTitle = this.title ?? '';
 
         // 初始化输入框值
         keyInput.value = this.currentPath.key;
@@ -636,18 +636,18 @@ class QBinEditorBase {
                 if (newPath.key) {
                     // 更新输入框值 - 使用多种方式确保UI更新
                     keyInput.value = newPath.key;
-                    passwordInput.value = newPath.pwd || '';
+                    passwordInput.value = newPath.pwd ?? '';
 
                     // 直接设置DOM属性
                     keyInput.setAttribute('value', newPath.key);
-                    passwordInput.setAttribute('value', newPath.pwd || '');
+                    passwordInput.setAttribute('value', newPath.pwd ?? '');
 
                     // 更新当前路径对象
                     this.currentPath = newPath;
 
                     // 更新原始值以便撤销功能正常工作
                     originalKey = newPath.key;
-                    originalPwd = newPath.pwd || '';
+                    originalPwd = newPath.pwd ?? '';
 
                     // 重置输入框修改状态
                     keyInput.classList.remove('input-modified');
@@ -856,8 +856,8 @@ class QBinEditorBase {
                 this.updateDocumentTitle(cacheData.title);
             } else {
                 // 如果缓存中没有，就从类属性获取
-                titleInput.value = this.title || '';
-                this.updateDocumentTitle(this.title || '');
+                titleInput.value = this.title ?? '';
+                this.updateDocumentTitle(this.title ?? '');
             }
             titleInput.classList.remove('input-modified');
         } catch (error) {

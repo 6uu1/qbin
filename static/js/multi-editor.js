@@ -42,7 +42,7 @@ class QBinMultiEditor extends QBinEditorBase {
                 if (item.type.indexOf('image/') === 0) {
                     e.preventDefault();
                     const file = item.getAsFile();
-                    this.title = file.name;
+                    this.title = file.name.trim();
                     this.handleUpload(file, file.type);
                     return;
                 }
@@ -115,7 +115,7 @@ class QBinMultiEditor extends QBinEditorBase {
                     this.editor.classList.remove('processing');
                 }, 500);
 
-                this.title = file.name;
+                this.title = file.name.trim();
                 this.handleUpload(file, file.type);
                 if (file.type.includes("text/")) {
                     this.appendTextContent(file);
