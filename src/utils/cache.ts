@@ -47,12 +47,7 @@ export async function isCached(key: string, pwd?: string | undefined, repo): Pro
   }
 
   const kvResult = await kv.get([PASTE_STORE, key]);
-  if (!kvResult.value){
-    memCache.set(key, {'pwd': "!"});   // 减少内查询
-    return null;
-  }
-
-  // kv不同步
+  if (!kvResult.value) return null;
   memCache.set(key, kvResult.value);   // 减少内查询
   return kvResult.value;
 }
@@ -65,14 +60,8 @@ export async function checkCached(key: string, pwd?: string | undefined, repo): 
   }
 
   const kvResult = await kv.get([PASTE_STORE, key]);
-  if (!kvResult.value){
-    memCache.set(key, {'pwd': "!"});   // 减少内查询
-    return null;
-  }
-  if (!checkPassword(kvResult.value.pwd, pwd)){
-    memCache.set(key, {'pwd': kvResult.value.pwd});   // 减少内查询
-    return null;
-  }
+  if (!kvResult.value) return null;
+  if (!checkPassword(kvResult.value.pwd, pwd)) return null;
   return kvResult.value;
 }
 

@@ -148,6 +148,7 @@ class QBinMultiEditor extends QBinEditorBase {
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
                     const file = e.target.files[0];
+                    this.title = file.name.trim();
                     this.handleUpload(file, file.type);
                     if (file.type.includes("text/")) {
                         this.appendTextContent(file);

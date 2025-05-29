@@ -4,7 +4,6 @@ import {
   isCached,
   updateCache,
   kv,
-  memCache,
   cacheBroadcast,
   deleteCache,
 } from "../utils/cache.ts";
@@ -68,7 +67,7 @@ export async function queryRaw(ctx: Context<AppState>) {
   ctx.response.status = 200;
   ctx.response.headers.set("Content-Type", meta.mime);
   ctx.response.headers.set("Content-Length", meta.len.toString());
-  if(full.title) ctx.response.headers.set("Content-Disposition", `inline; filename="${full.title}"`);
+  if(meta.title) ctx.response.headers.set("Content-Disposition", `inline; filename="${meta.title}"`);
 }
 
 /** POST/PUT /save/:key/:pwd? 统一入口：若 key 已存在则更新，否则创建 */
@@ -259,7 +258,8 @@ async function assembleMetadata(
   }
 
   const payload = ctx.state.session?.get("user");
-  const clientIp = headers.get("cf-connecting-ip") || req.ip;
+  // const clientIp = headers.get("cf-connecting-ip") || req.ip;
+  const clientIp = req.ip;
   return {
     fkey: key,
     title: title,
