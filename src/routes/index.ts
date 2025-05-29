@@ -10,6 +10,6 @@ router
   .use(frontend.routes(), frontend.allowedMethods())
   .use(paste.routes(), paste.allowedMethods())
   .use(api.routes(), api.allowedMethods())
-  .use(admin.routes(), api.allowedMethods())
+  .use(admin.routes(), admin.allowedMethods())
 
 export default router;
