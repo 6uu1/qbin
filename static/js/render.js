@@ -218,9 +218,9 @@ class QBinViewer {
             }
             const url = `/r/${key}/${pwd}`;
             this.showLoading();
-            const headResponse = await fetch(url, {method: 'HEAD'});
-            if (!headResponse.ok) {
-                const status = headResponse.status;
+            const metaResponse = await fetch(`${url}?meta=1`);
+            if (!metaResponse.ok) {
+                const status = metaResponse.status;
                 if (status === 403) {
                     // 处理密码错误的情况 - 显示密码输入界面
                     this.showPasswordDialog(key, pwd);
@@ -230,7 +230,8 @@ class QBinViewer {
                 }
                 throw new Error('内容加载失败');
             }
-            await this.loadContent(headResponse);
+            const meta = await metaResponse.json();
+            await this.loadContent(meta);
         } catch (error) {
             console.error('Error loading content:', error);
             const debouncedHome = this.debounce(() => this.handleHome());
@@ -242,17 +243,13 @@ class QBinViewer {
         }
     }
 
-    async loadContent(headResponse) {
-        const contentType = headResponse.headers.get('Content-Type');
-        const contentLength = headResponse.headers.get('Content-Length');
-        const contentDisposition = headResponse.headers.get('Content-Disposition');
-        if (contentDisposition && contentDisposition.includes('filename=')) {
-            const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
-            if (filenameMatch && filenameMatch[1]) {
-                this.title = decodeURIComponent(filenameMatch[1]);
-                if(this.title){
-                    document.title = `${this.title} - QBin`;
-                }
+    async loadContent(meta) {
+        const contentType = meta.contentType || 'text/plain; charset=UTF-8';
+        const contentLength = meta.contentLength;
+        if (meta.title) {
+            this.title = decodeURIComponent(meta.title);
+            if (this.title) {
+                document.title = `${this.title} - QBin`;
             }
         }
         this.setupButtons(contentType);
@@ -814,7 +811,7 @@ class QBinViewer {
 
                     // Re-fetch content
                     this.showLoading();
-                    await this.loadContent(validationResult.headResponse);
+                    await this.loadContent(validationResult.meta);
                 } else {
                     // Failed validation
                     passwordError.textContent = '密码错误，请重试';
@@ -842,10 +839,10 @@ class QBinViewer {
 
     async validatePassword(key, password) {
         const url = `/r/${key}/${password}`;
-        const headResponse = await fetch(url, {method: 'HEAD'});
+        const metaResponse = await fetch(`${url}?meta=1`);
         return {
-            valid: headResponse.ok,
-            headResponse: headResponse
+            valid: metaResponse.ok,
+            meta: metaResponse.ok ? await metaResponse.json() : null
         };
     }
 
