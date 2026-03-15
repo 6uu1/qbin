@@ -100,6 +100,7 @@ class MetadataRepository implements IMetadataRepository {
         title: this.t.title,
         uname: this.t.uname,
         ip: this.t.ip,
+        mime: this.t.mime,
         len: this.t.len,
         expire: this.t.expire,
         hash: this.t.hash,
