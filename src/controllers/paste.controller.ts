@@ -30,7 +30,7 @@ export async function getRaw(ctx: Context<AppState>) {
   const repo = await createMetadataRepository();
 
   // 只查 meta，作用：无权限时提前返回 403/404
-  const meta = await isCached(key, pwd, repo);
+  const meta = await isCached(key, pwd);
   if (meta?.email === undefined || (meta.expire ?? 0) < getTimestamp()) {
     throw new Response(ctx, 404, ResponseMessages.CONTENT_NOT_FOUND);
   }
@@ -69,7 +69,7 @@ export async function queryRaw(ctx: Context<AppState>) {
   const repo = await createMetadataRepository();
 
   // 只查 meta，作用：无权限时提前返回 403/404
-  const meta = await isCached(key, pwd, repo);
+  const meta = await isCached(key, pwd);
   if (meta?.email === undefined || (meta.expire ?? 0) < getTimestamp()) {
     throw new Response(ctx, 404, ResponseMessages.CONTENT_NOT_FOUND);
   }
@@ -89,7 +89,7 @@ export async function save(ctx: Context<AppState>) {
   if (reservedPaths.has(key)) throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
 
   const repo = await createMetadataRepository();
-  const meta = await isCached(key, pwd, repo);
+  const meta = await isCached(key, pwd);
 
   return meta && "email" in meta
     ? await updateExisting(ctx, key, pwd, meta, repo)
@@ -101,7 +101,7 @@ export async function remove(ctx: Context<AppState>) {
   const { key, pwd } = parsePathParams(ctx.params);
   if (reservedPaths.has(key)) throw new Response(ctx, 403, ResponseMessages.PATH_RESERVED);
   const repo = await createMetadataRepository();
-  const meta = await isCached(key, pwd, repo);
+  const meta = await isCached(key, pwd);
   if (!meta || (meta.expire ?? 0) < getTimestamp()) throw new Response(ctx, 404, ResponseMessages.CONTENT_NOT_FOUND);
   const email = ctx.state.session?.get("user")?.email;
   const isAdmin = email === EMAIL;
@@ -128,6 +128,27 @@ export async function remove(ctx: Context<AppState>) {
 }
 
 /* ─────────── 辅助私有函数 ─────────── */
+function getClientIp(ctx: Context<AppState>): string {
+  const headers = ctx.request.headers;
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+
+  const realIp = headers.get("x-real-ip");
+  if (realIp) return realIp;
+
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+
+  try {
+    const directIp = ctx.request.ip;
+    if (directIp) return directIp;
+  } catch {
+    // Oak Node adapter can throw when remoteAddr is not available.
+  }
+
+  return "0.0.0.0";
+}
+
 async function createNew(
   ctx: Context<AppState>,
   key: string,
@@ -141,8 +162,9 @@ async function createNew(
     .set([PASTE_STORE, key], {
       email: metadata.email,
       title: metadata.title,
-      name: metadata.uname,
+      uname: metadata.uname,
       ip: metadata.ip,
+      mime: metadata.mime,
       len: metadata.len,
       expire: metadata.expire,
       hash: metadata.hash,
@@ -195,8 +217,9 @@ async function updateExisting(
   await kv.set([PASTE_STORE, key], {
       email: metadata.email,
       title: metadata.title,
-      name: metadata.uname,
+      uname: metadata.uname,
       ip: metadata.ip,
+      mime: metadata.mime,
       len: metadata.len,
       expire: metadata.expire,
       hash: metadata.hash,
@@ -213,8 +236,9 @@ async function updateExisting(
         await kv.set([PASTE_STORE, key], {
           email: oldMeta.email,
           title: oldMeta.title,
-          name: oldMeta.uname,
+          uname: oldMeta.uname,
           ip: oldMeta.ip,
+          mime: oldMeta.mime,
           len: oldMeta.len,
           expire: oldMeta.expire,
           hash: oldMeta.hash,
@@ -230,8 +254,9 @@ async function updateExisting(
       await kv.set([PASTE_STORE, key], {
           email: oldMeta.email,
           title: oldMeta.title,
-          name: oldMeta.uname,
+          uname: oldMeta.uname,
           ip: oldMeta.ip,
+          mime: oldMeta.mime,
           len: oldMeta.len,
           expire: oldMeta.expire,
           hash: oldMeta.hash,
@@ -272,7 +297,7 @@ async function assembleMetadata(
   }
 
   const payload = ctx.state.session?.get("user");
-  const clientIp = headers.get("cf-connecting-ip") || req.ip;
+  const clientIp = getClientIp(ctx);
   // const clientIp = req.ip;
   return {
     fkey: key,

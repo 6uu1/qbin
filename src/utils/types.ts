@@ -30,14 +30,16 @@ export interface Metadata {
 }
 
 export interface KVMeta {
-  fkey: string;
+  fkey?: string;
   email: string | null;
   title: string | null;
-  name: string | null;
+  uname: string | null;
+  name?: string | null;
   ip: string | null;
+  mime: string | null;
   len: number;
   expire: number;
-  hash: string;
+  hash: number | string | null;
   pwd: string | null;
 }
 

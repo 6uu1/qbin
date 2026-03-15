@@ -1,7 +1,6 @@
 /**
  * 多级缓存管理
  * - 内存 (memCache)
- * - Cache API (Deno Deploy KV-like)
  * - Deno KV (for meta) + Postgres (最终存储)
  */
 import {
@@ -12,7 +11,7 @@ import {
   MAX_CACHE_SIZE,
   PASTE_STORE
 } from "../config/constants.ts";
-import { Metadata } from "../utils/types.ts";
+import { KVMeta, Metadata } from "../utils/types.ts";
 import { checkPassword } from "./validator.ts";
 
 
@@ -30,6 +29,22 @@ export const kv = await ((() => {
 })());
 export const cacheBroadcast = new BroadcastChannel(CACHE_CHANNEL);
 
+function normalizeKVMeta(key: string, raw: Partial<KVMeta> & Record<string, unknown>): KVMeta {
+  return {
+    fkey: key,
+    email: typeof raw.email === "string" ? raw.email : "",
+    title: typeof raw.title === "string" ? raw.title : "",
+    uname: typeof raw.uname === "string" ? raw.uname : "",
+    ip: typeof raw.ip === "string" ? raw.ip : "",
+    mime: typeof raw.mime === "string" ? raw.mime : "",
+    len: Number(raw.len ?? 0),
+    expire: Number(raw.expire ?? 0),
+    hash: Number(raw.hash ?? 0),
+    pwd: typeof raw.pwd === "string" ? raw.pwd : "",
+  };
+}
+
+
 cacheBroadcast.onmessage = async (event: MessageEvent) => {
   const { type, key, metadata } = event.data;
   if (!key) return;
@@ -40,29 +55,39 @@ cacheBroadcast.onmessage = async (event: MessageEvent) => {
   }
 };
 
-export async function isCached(key: string, pwd?: string | undefined, repo): Promise<Metadata | null> {
+export async function isCached(key: string, pwd?: string | undefined): Promise<Metadata | null> {
   const memData = memCache.get(key);
   if (memData && "pwd" in memData) {
-    if ("pwd" in memData) return memData;
+    if ("pwd" in memData) return memData as Metadata;
   }
 
   const kvResult = await kv.get([PASTE_STORE, key]);
-  if (!kvResult.value) return null;
-  memCache.set(key, kvResult.value);   // 减少内查询
-  return kvResult.value;
+  if (!kvResult.value){
+    return null;
+  }
+
+  const kvMeta = normalizeKVMeta(key, kvResult.value as Partial<KVMeta> & Record<string, unknown>);
+  memCache.set(key, kvMeta);   // 减少内查询
+  return kvMeta as Metadata;
 }
 
-export async function checkCached(key: string, pwd?: string | undefined, repo): Promise<Metadata | null> {
+export async function checkCached(key: string, pwd?: string | undefined): Promise<Metadata | null> {
   const memData = memCache.get(key);
   if (memData && "pwd" in memData) {
     if (!checkPassword(memData.pwd, pwd)) return null;
-    if ("content" in memData) return memData;
+    if ("content" in memData) return memData as Metadata;
   }
 
   const kvResult = await kv.get([PASTE_STORE, key]);
-  if (!kvResult.value) return null;
-  if (!checkPassword(kvResult.value.pwd, pwd)) return null;
-  return kvResult.value;
+  if (!kvResult.value){
+    return null;
+  }
+  const kvMeta = normalizeKVMeta(key, kvResult.value as Partial<KVMeta> & Record<string, unknown>);
+  if (!checkPassword(kvMeta.pwd || "", pwd)){
+    return null;
+  }
+  memCache.set(key, kvMeta);
+  return kvMeta as Metadata;
 }
 
 /**
@@ -70,7 +95,7 @@ export async function checkCached(key: string, pwd?: string | undefined, repo): 
  */
 export async function getCachedContent(key: string, pwd?: string, repo): Promise<Metadata | null> {
   try {
-    const cache = await checkCached(key, pwd, repo);
+    const cache = await checkCached(key, pwd);
     if (cache === null) return cache;
     if ("content" in cache) return cache;
 

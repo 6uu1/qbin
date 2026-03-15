@@ -14,6 +14,17 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 
+function toSafeArrayBuffer(value: unknown): ArrayBuffer {
+  if (value instanceof ArrayBuffer) {
+    return value.slice(0);
+  }
+  if (ArrayBuffer.isView(value)) {
+    const { buffer, byteOffset, byteLength } = value;
+    return buffer.slice(byteOffset, byteOffset + byteLength);
+  }
+  throw new TypeError("Unsupported binary driver value");
+}
+
 // 自定义 bytea 列类型
 const byteArray = customType<{ data: ArrayBuffer; driverData: Uint8Array }>({
   dataType() {
@@ -23,7 +34,7 @@ const byteArray = customType<{ data: ArrayBuffer; driverData: Uint8Array }>({
     return new Uint8Array(value);
   },
   fromDriver(value) {               // 读出库之后
-    return (value as Uint8Array).buffer;
+    return toSafeArrayBuffer(value);
   },
 });
 
